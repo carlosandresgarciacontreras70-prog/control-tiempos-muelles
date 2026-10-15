@@ -1,0 +1,2118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Tiempos de Vehículos y Muelles</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .badge-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
+    @media print {
+      header, footer, nav, #view-dashboard, #view-conductor, #view-muelles, #view-history, #view-method, .no-print {
+        display: none !important;
+      }
+      #view-settings {
+        display: block !important;
+      }
+      .print-only-posters {
+        display: block !important;
+      }
+      .page-break {
+        page-break-after: always;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 shadow-sm sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-inner">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-lg font-bold text-slate-100 leading-tight">Control de Tiempos de Vehículos y Muelles</h1>
+            <span id="header-dest-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">👥 Grupo WhatsApp</span>
+          </div>
+          <p class="text-xs text-slate-400">Gestión de Llegada, Muelle, Salida y Reportes Móviles para Conductores</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3 text-sm">
+        <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 flex items-center space-x-2">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 badge-pulse"></span>
+          <span id="current-time-clock" class="font-mono text-xs font-semibold tracking-wider">--:--:--</span>
+        </div>
+        <button id="btn-copy-driver-link" title="Copiar enlace exclusivo para que el conductor solo vea la pantalla de registro" class="inline-flex items-center px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 font-medium text-xs shadow transition">
+          <svg class="w-4 h-4 mr-1.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+          <span>Link Conductor</span>
+        </button>
+        <button id="btn-share-shift-wa" class="inline-flex items-center px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow transition">
+          <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.668-.699c.969.585 1.777.892 2.79.893 3.185 0 5.77-2.587 5.77-5.766.001-3.182-2.585-5.779-5.768-5.779zm9.969 5.768c0 5.518-4.482 10-10 10-1.745 0-3.376-.449-4.805-1.233l-5.195 1.36 1.385-5.06c-.881-1.488-1.385-3.23-1.385-5.067 0-5.518 4.482-10 10-10 5.518 0 10 4.482 10 10z"/></svg>
+          Reporte a WhatsApp
+        </button>
+        <button id="btn-open-new-vh" class="inline-flex items-center px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs shadow transition">
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          Registrar Vehículo
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-800 flex space-x-2 overflow-x-auto text-sm">
+      <button id="tab-btn-dashboard" class="py-2.5 px-4 font-medium border-b-2 border-blue-500 text-blue-400 transition whitespace-nowrap">
+        Operación en Vivo
+      </button>
+      <button id="tab-btn-conductor" class="py-2.5 px-4 font-medium border-b-2 border-transparent text-emerald-400 hover:text-emerald-300 transition whitespace-nowrap flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        Portal Conductor (Móvil)
+      </button>
+      <button id="tab-btn-muelles" class="py-2.5 px-4 font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition whitespace-nowrap">
+        Estado de Muelles (Bahías)
+      </button>
+      <button id="tab-btn-history" class="py-2.5 px-4 font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition whitespace-nowrap">
+        Historial y Exportación
+      </button>
+      <button id="tab-btn-settings" class="py-2.5 px-4 font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition whitespace-nowrap">
+        Configurar WhatsApp & QR
+      </button>
+      <button id="tab-btn-method" class="py-2.5 px-4 font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition whitespace-nowrap">
+        Método y Fórmulas Excel
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+    <!-- KPI Summary Cards -->
+    <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+        <p class="text-xs font-medium text-slate-500">Total Vehículos</p>
+        <p id="kpi-total" class="text-2xl font-bold text-slate-800 mt-1">0</p>
+        <p class="text-[11px] text-slate-400 mt-0.5">En jornada actual</p>
+      </div>
+      <div class="bg-amber-50 p-3.5 rounded-xl border border-amber-200 shadow-sm">
+        <p class="text-xs font-semibold text-amber-800">En Espera (Patio)</p>
+        <p id="kpi-espera" class="text-2xl font-bold text-amber-700 mt-1">0</p>
+        <p class="text-[11px] text-amber-600 mt-0.5">Esperando muelle</p>
+      </div>
+      <div class="bg-blue-50 p-3.5 rounded-xl border border-blue-200 shadow-sm">
+        <p class="text-xs font-semibold text-blue-800">En Muelle</p>
+        <p id="kpi-muelle" class="text-2xl font-bold text-blue-700 mt-1">0</p>
+        <p class="text-[11px] text-blue-600 mt-0.5">Cargue / Descargue</p>
+      </div>
+      <div class="bg-emerald-50 p-3.5 rounded-xl border border-emerald-200 shadow-sm">
+        <p class="text-xs font-semibold text-emerald-800">Despachados</p>
+        <p id="kpi-salidos" class="text-2xl font-bold text-emerald-700 mt-1">0</p>
+        <p class="text-[11px] text-emerald-600 mt-0.5">Ciclo completado</p>
+      </div>
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+        <p class="text-xs font-medium text-slate-500">Prom. Espera Patio</p>
+        <p id="kpi-avg-wait" class="text-2xl font-bold text-slate-800 mt-1">0m</p>
+        <p class="text-[11px] text-slate-400 mt-0.5">Llegada &rarr; Muelle</p>
+      </div>
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+        <p class="text-xs font-medium text-slate-500">Prom. En Muelle</p>
+        <p id="kpi-avg-dock" class="text-2xl font-bold text-slate-800 mt-1">0m</p>
+        <p class="text-[11px] text-slate-400 mt-0.5">Ingreso &rarr; Salida muelle</p>
+      </div>
+    </section>
+
+    <!-- SECTION 1: Operación en Vivo (Dashboard & Active List) -->
+    <section id="view-dashboard" class="space-y-6">
+      
+      <!-- Action Bar -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="relative">
+            <input type="text" id="search-input" placeholder="Buscar por placa, conductor..." class="pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-60">
+            <svg class="w-4 h-4 absolute left-2.5 top-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </div>
+          <select id="filter-status" class="py-1.5 px-3 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="ALL">Todos los Estados</option>
+            <option value="ESPERA">Solo en Espera (Patio)</option>
+            <option value="MUELLE">Solo en Muelle (Operando)</option>
+            <option value="SALIDO">Solo Despachados</option>
+          </select>
+          <select id="filter-operacion" class="py-1.5 px-3 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="ALL">Todas las Operaciones</option>
+            <option value="Descargue">Descargue</option>
+            <option value="Cargue">Cargue</option>
+            <option value="Mixto">Mixto (Cargue y Descargue)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <button id="btn-quick-sample-data" class="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition border border-slate-200">
+            Cargar Ejemplos
+          </button>
+          <button id="btn-clear-all" class="px-3 py-1.5 text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition border border-rose-200">
+            Limpiar Lista
+          </button>
+        </div>
+      </div>
+
+      <!-- Vehicle Workflow Table -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <span>Flujo Operativo de Vehículos en Patio y Muelle</span>
+            <span id="active-count-badge" class="px-2 py-0.5 text-[11px] rounded-full bg-blue-100 text-blue-700 font-semibold">0 vehículos</span>
+          </h2>
+          <span class="text-[11px] text-slate-400 hidden sm:inline">Los reportes enviados por conductores actualizan esta tabla en vivo</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 uppercase tracking-wider text-[11px]">
+                <th class="py-3 px-3.5">Vehículo / Placa</th>
+                <th class="py-3 px-3">Operación / Muelle</th>
+                <th class="py-3 px-3">1. Llegada (Portería)</th>
+                <th class="py-3 px-3">2. Ingreso a Muelle</th>
+                <th class="py-3 px-3">3. Salida de Muelle</th>
+                <th class="py-3 px-3">4. Salida de Portería</th>
+                <th class="py-3 px-3">Tiempos Calculados</th>
+                <th class="py-3 px-3 text-center">Notificar / Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="vehicle-table-body" class="divide-y divide-slate-100">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="empty-state-notice" class="hidden p-10 text-center text-slate-400">
+          <svg class="w-12 h-12 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+          <p class="text-sm font-medium text-slate-600">No hay vehículos registrados para este filtro</p>
+          <p class="text-xs text-slate-400 mt-1">Haga clic en "Registrar Vehículo" o use "Cargar Ejemplos" para empezar.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: Portal Conductor (Móvil / Self-Service) -->
+    <section id="view-conductor" class="space-y-6 hidden">
+      <div class="max-w-xl mx-auto">
+        <!-- Driver Mobile Mockup Card -->
+        <div class="bg-white rounded-2xl border-2 border-slate-300 shadow-xl overflow-hidden">
+          
+          <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-5 text-center relative">
+            <span class="inline-block px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold mb-2 border border-emerald-500/30">
+              📲 Modo Conductor
+            </span>
+            <h2 class="text-lg font-bold">Auto-Reporte de Tiempos</h2>
+            <p class="text-xs text-slate-300 mt-0.5">Reporte en 1 toque. Se registra en la central y publica su notificación en el Grupo de WhatsApp.</p>
+          </div>
+
+          <div class="p-5 sm:p-6 space-y-5">
+            <!-- Mode Banner -->
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center justify-between text-xs text-blue-900">
+              <div class="flex items-center space-x-2">
+                <span class="text-base">🔒</span>
+                <div>
+                  <span class="font-bold">Vista de Conductor Activa:</span>
+                  <span class="text-slate-600 block text-[11px]">Usted solo puede registrar su vehículo y enviar reportes.</span>
+                </div>
+              </div>
+              <button id="btn-switch-to-admin-view" class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 font-semibold border border-slate-300 rounded text-[11px] shadow-sm transition">
+                Acceso Admin
+              </button>
+            </div>
+
+            <!-- Group Info Banner for Driver -->
+            <div id="driver-group-banner" class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between text-xs text-emerald-900">
+              <div class="flex items-center space-x-2">
+                <span class="text-lg">👥</span>
+                <div>
+                  <span class="font-bold">Grupo de Destino:</span>
+                  <span id="driver-banner-group-name" class="font-semibold text-emerald-950 block">Operaciones Patio y Muelles</span>
+                </div>
+              </div>
+              <a id="driver-join-group-link" href="#" target="_blank" class="hidden px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg text-[11px] shadow transition">
+                Unirme al Grupo
+              </a>
+            </div>
+            <!-- Vehicle Selection / Placa Entry -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="block text-xs font-bold text-slate-800 uppercase">1. Placa de su Vehículo *</label>
+                  <span id="driver-plate-remembered-badge" class="text-[10px] text-emerald-600 font-semibold hidden">✓ Recordada en este celular</span>
+                </div>
+                <div class="flex gap-2">
+                  <input type="text" id="driver-input-placa" placeholder="EJ: WKL-482" class="w-full uppercase font-mono font-bold text-lg px-3.5 py-2.5 bg-white border-2 border-slate-300 rounded-xl focus:border-blue-600 focus:outline-none text-slate-900 shadow-sm">
+                  <button type="button" id="btn-driver-search-placa" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition whitespace-nowrap shadow-sm">
+                    Buscar
+                  </button>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Escriba su placa una sola vez. El sistema la recordará en su celular para los próximos reportes.</p>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Nombre del Conductor</label>
+                  <input type="text" id="driver-input-nombre" placeholder="Su nombre" class="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Empresa / Transportadora</label>
+                  <input type="text" id="driver-input-empresa" placeholder="Transportadora" class="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-lg">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Operación</label>
+                  <select id="driver-input-operacion" class="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-lg">
+                    <option value="Descargue">Descargue (Recepción)</option>
+                    <option value="Cargue">Cargue (Despacho)</option>
+                    <option value="Mixto">Mixto</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Muelle (si le fue asignado)</label>
+                  <select id="driver-input-muelle" class="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-lg">
+                    <option value="">-- Sin muelle asignado --</option>
+                    <option value="Muelle 1">Muelle 1</option>
+                    <option value="Muelle 2">Muelle 2</option>
+                    <option value="Muelle 3">Muelle 3</option>
+                    <option value="Muelle 4">Muelle 4</option>
+                    <option value="Muelle 5">Muelle 5</option>
+                    <option value="Muelle 6">Muelle 6</option>
+                    <option value="Muelle 7">Muelle 7</option>
+                    <option value="Muelle 8">Muelle 8</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Observaciones adicionales</label>
+                <input type="text" id="driver-input-obs" placeholder="Ej: Remisión #1234 / En fila de portería" class="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-lg">
+              </div>
+            </div>
+
+            <!-- Current Status Box for this driver -->
+            <div id="driver-status-card" class="p-3.5 rounded-xl border border-blue-200 bg-blue-50/60 hidden text-xs">
+              <div class="flex items-center justify-between font-bold text-blue-900">
+                <span>Estado actual de la placa:</span>
+                <span id="driver-current-status-badge" class="px-2 py-0.5 rounded bg-blue-200 text-blue-800">En Espera</span>
+              </div>
+              <div id="driver-current-times-summary" class="mt-2 text-slate-600 space-y-0.5 text-[11px]"></div>
+            </div>
+
+            <!-- Action Buttons for Drivers (Ultra Easy, High Contrast, 3 Core Steps) -->
+            <div class="space-y-3">
+              <p class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                <span>2. Toque el botón según su ubicación:</span>
+                <span class="text-[11px] text-emerald-600 font-semibold">Envío automático al grupo</span>
+              </p>
+
+              <!-- Button 1: Llegada -->
+              <button type="button" id="btn-driver-llegada" class="w-full p-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-bold shadow-lg shadow-emerald-600/20 flex items-center justify-between transition-all group">
+                <div class="flex items-center space-x-3.5">
+                  <div class="w-11 h-11 rounded-xl bg-emerald-700/80 flex items-center justify-center font-black text-xl shadow-inner">
+                    1
+                  </div>
+                  <div class="text-left">
+                    <div class="text-base font-bold leading-tight">LLEGADA A PLANTA</div>
+                    <div class="text-xs font-normal text-emerald-100 mt-0.5">Escanear / tocar al llegar a caseta</div>
+                  </div>
+                </div>
+                <span class="text-xs bg-emerald-700/90 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 shadow-sm">
+                  <span>WhatsApp</span>
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.668-.699c.969.585 1.777.892 2.79.893 3.185 0 5.77-2.587 5.77-5.766.001-3.182-2.585-5.779-5.768-5.779zm9.969 5.768c0 5.518-4.482 10-10 10-1.745 0-3.376-.449-4.805-1.233l-5.195 1.36 1.385-5.06c-.881-1.488-1.385-3.23-1.385-5.067 0-5.518 4.482-10 10-10 5.518 0 10 4.482 10 10z"/></svg>
+                </span>
+              </button>
+
+              <!-- Button 2: Ingreso a Muelle -->
+              <button type="button" id="btn-driver-muelle" class="w-full p-4 rounded-2xl bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-bold shadow-lg shadow-blue-600/20 flex items-center justify-between transition-all group">
+                <div class="flex items-center space-x-3.5">
+                  <div class="w-11 h-11 rounded-xl bg-blue-700/80 flex items-center justify-center font-black text-xl shadow-inner">
+                    2
+                  </div>
+                  <div class="text-left">
+                    <div class="text-base font-bold leading-tight">INGRESO A MUELLE</div>
+                    <div class="text-xs font-normal text-blue-100 mt-0.5">Escanear / tocar al acoplar en bahía</div>
+                  </div>
+                </div>
+                <span class="text-xs bg-blue-700/90 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 shadow-sm">
+                  <span>WhatsApp</span>
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.668-.699c.969.585 1.777.892 2.79.893 3.185 0 5.77-2.587 5.77-5.766.001-3.182-2.585-5.779-5.768-5.779zm9.969 5.768c0 5.518-4.482 10-10 10-1.745 0-3.376-.449-4.805-1.233l-5.195 1.36 1.385-5.06c-.881-1.488-1.385-3.23-1.385-5.067 0-5.518 4.482-10 10-10 5.518 0 10 4.482 10 10z"/></svg>
+                </span>
+              </button>
+
+              <!-- Button 3: Salida Definitiva -->
+              <button type="button" id="btn-driver-salida" class="w-full p-4 rounded-2xl bg-rose-600 hover:bg-rose-500 active:scale-[0.98] text-white font-bold shadow-lg shadow-rose-600/20 flex items-center justify-between transition-all group">
+                <div class="flex items-center space-x-3.5">
+                  <div class="w-11 h-11 rounded-xl bg-rose-700/80 flex items-center justify-center font-black text-xl shadow-inner">
+                    3
+                  </div>
+                  <div class="text-left">
+                    <div class="text-base font-bold leading-tight">SALIDA DE PLANTA</div>
+                    <div class="text-xs font-normal text-rose-100 mt-0.5">Escanear / tocar al salir por portería</div>
+                  </div>
+                </div>
+                <span class="text-xs bg-rose-700/90 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 shadow-sm">
+                  <span>WhatsApp</span>
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.668-.699c.969.585 1.777.892 2.79.893 3.185 0 5.77-2.587 5.77-5.766.001-3.182-2.585-5.779-5.768-5.779zm9.969 5.768c0 5.518-4.482 10-10 10-1.745 0-3.376-.449-4.805-1.233l-5.195 1.36 1.385-5.06c-.881-1.488-1.385-3.23-1.385-5.067 0-5.518 4.482-10 10-10 5.518 0 10 4.482 10 10z"/></svg>
+                </span>
+              </button>
+
+              <!-- Optional Sub-step: Fin de Operación en Muelle -->
+              <div class="pt-1 text-center">
+                <button type="button" id="btn-driver-fin-muelle" class="text-xs text-purple-700 hover:text-purple-900 underline font-medium">
+                  ¿Liberó muelle antes de facturar? Toque aquí para marcar Salida de Muelle
+                </button>
+              </div>
+            </div>
+
+            <!-- WhatsApp destination note -->
+            <div class="p-3 bg-slate-100 rounded-lg text-slate-600 text-[11px] flex items-center justify-between">
+              <span>Destino: 👥 <strong id="driver-view-target-phone" class="text-emerald-800 font-bold">Grupo: Operaciones Patio</strong></span>
+              <button id="btn-go-to-settings" class="text-blue-600 hover:underline font-semibold">Cambiar</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: Estado de Muelles (Bay Visualizer) -->
+    <section id="view-muelles" class="space-y-6 hidden">
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-slate-800">Monitoreo Gráfico de Bahías y Muelles de Carga/Descarga</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Vista visual de ocupación en tiempo real y tiempos de permanencia en rampa</p>
+        </div>
+        <div class="flex items-center space-x-3 text-xs">
+          <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded bg-emerald-500 inline-block"></span><span class="text-slate-600 font-medium">Libre</span></div>
+          <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded bg-blue-600 inline-block"></span><span class="text-slate-600 font-medium">Ocupado</span></div>
+          <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded bg-amber-500 inline-block"></span><span class="text-slate-600 font-medium">Tiempo Alto (&gt;60m)</span></div>
+        </div>
+      </div>
+
+      <div id="dock-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <!-- Rendered via JS for Docks 1 to 8 -->
+      </div>
+    </section>
+
+    <!-- SECTION 4: Historial y Exportación -->
+    <section id="view-history" class="space-y-6 hidden">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-800">Reporte Consolidado y Exportación de Tiempos</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Descargue la bitácora completa en formato compatible con Microsoft Excel o Google Sheets</p>
+        </div>
+        <div class="flex items-center space-x-3">
+          <button id="btn-export-csv" class="inline-flex items-center px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow transition">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            Exportar a Excel / CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- History Table -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 text-[11px]">
+                <th class="py-2.5 px-3">Placa</th>
+                <th class="py-2.5 px-3">Tipo / Empresa</th>
+                <th class="py-2.5 px-3">Operación</th>
+                <th class="py-2.5 px-3">Muelle</th>
+                <th class="py-2.5 px-3">Llegada</th>
+                <th class="py-2.5 px-3">Ingreso Muelle</th>
+                <th class="py-2.5 px-3">Salida Muelle</th>
+                <th class="py-2.5 px-3">Salida Portería</th>
+                <th class="py-2.5 px-3">Espera (min)</th>
+                <th class="py-2.5 px-3">Muelle (min)</th>
+                <th class="py-2.5 px-3">Total (min)</th>
+                <th class="py-2.5 px-3">Estado</th>
+                <th class="py-2.5 px-3 text-center">WhatsApp</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body" class="divide-y divide-slate-100">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: Configurar WhatsApp & QR -->
+    <section id="view-settings" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- WhatsApp Destination Config -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
+          <div class="flex items-center space-x-3 border-b border-slate-100 pb-3">
+            <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.668-.699c.969.585 1.777.892 2.79.893 3.185 0 5.77-2.587 5.77-5.766.001-3.182-2.585-5.779-5.768-5.779zm9.969 5.768c0 5.518-4.482 10-10 10-1.745 0-3.376-.449-4.805-1.233l-5.195 1.36 1.385-5.06c-.881-1.488-1.385-3.23-1.385-5.067 0-5.518 4.482-10 10-10 5.518 0 10 4.482 10 10z"/></svg>
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-slate-800">Configuración de WhatsApp de Operaciones</h2>
+              <p class="text-xs text-slate-500">Define el número que recibirá los reportes de los conductores</p>
+            </div>
+          </div>
+
+          <form id="form-settings-wa" class="space-y-4">
+            <!-- Mode Selector: Group vs Individual -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase mb-1.5">
+                Modo de Envío de Mensajes *
+              </label>
+              <div class="grid grid-cols-2 gap-3 mb-3">
+                <label id="label-dest-group" class="flex items-center space-x-2 p-2.5 rounded-lg border-2 border-emerald-500 bg-emerald-50/50 cursor-pointer">
+                  <input type="radio" name="dest-type" value="GROUP" checked class="text-emerald-600 focus:ring-emerald-500">
+                  <div>
+                    <span class="block text-xs font-bold text-slate-800">👥 Grupo de WhatsApp</span>
+                    <span class="block text-[10px] text-slate-500">Todo el equipo</span>
+                  </div>
+                </label>
+                <label id="label-dest-direct" class="flex items-center space-x-2 p-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                  <input type="radio" name="dest-type" value="DIRECT" class="text-blue-600 focus:ring-blue-500">
+                  <div>
+                    <span class="block text-xs font-bold text-slate-800">👤 Teléfono Directo</span>
+                    <span class="block text-[10px] text-slate-500">Individual</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Group Configuration Fields -->
+            <div id="group-fields-container" class="space-y-3 bg-emerald-50/50 p-3 rounded-xl border border-emerald-200">
+              <div>
+                <label class="block text-xs font-bold text-emerald-950 mb-0.5">
+                  Nombre del Grupo de WhatsApp *
+                </label>
+                <input type="text" id="setting-group-name" placeholder="Ej: Operaciones Patio y Muelles" class="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                <p class="text-[10px] text-slate-500 mt-0.5">Al reportar, WhatsApp se abrirá para seleccionar este grupo en 1 toque.</p>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-emerald-950 mb-0.5">
+                  Enlace de Invitación al Grupo (Opcional)
+                </label>
+                <input type="url" id="setting-group-link" placeholder="https://chat.whatsapp.com/..." class="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono">
+                <p class="text-[10px] text-slate-500 mt-0.5">Permite que los conductores se unan al grupo escaneando el QR.</p>
+              </div>
+            </div>
+
+            <!-- Individual Phone Container -->
+            <div id="phone-field-container" class="space-y-2 hidden bg-blue-50/50 p-3 rounded-xl border border-blue-200">
+              <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                Número de WhatsApp de Destino (Supervisor / Central) *
+              </label>
+              <input type="text" id="setting-phone" placeholder="Ej: +573101234567 o 3101234567" class="w-full font-mono text-sm px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+              <p class="text-[11px] text-slate-400 mt-1">Incluya el código de país (ejemplo: +57 para Colombia).</p>
+            </div>
+
+            <div class="pt-1 flex items-center justify-end">
+              <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-lg shadow transition">
+                Guardar
+              </button>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                Nombre de la Empresa / Planta
+              </label>
+              <input type="text" id="setting-plant-name" placeholder="Ej: Centro de Distribución Mosquera" class="w-full text-xs px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-lg">
+            </div>
+
+            <div class="pt-2 flex items-center justify-between">
+              <button type="button" id="btn-test-wa" class="px-3.5 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition">
+                &check; Probar Envío de Prueba a WhatsApp
+              </button>
+            </div>
+          </form>
+
+          <!-- Preview Message Box -->
+          <div class="bg-slate-900 text-slate-200 p-4 rounded-xl font-mono text-xs space-y-1.5 border border-slate-800">
+            <p class="text-emerald-400 font-bold mb-1">// Ejemplo de mensaje generado automáticamente:</p>
+            <p class="text-slate-100">🚛 *REPORTE DE VEHÍCULO - PATIO Y MUELLES*</p>
+            <p>📍 *Evento:* 🟢 LLEGADA A PLANTA (Check-in)</p>
+            <p>🚛 *Placa:* WKL-482</p>
+            <p>👤 *Conductor:* Carlos Mario Gómez</p>
+            <p>🏢 *Transportadora:* TransLogística Andina</p>
+            <p>📦 *Operación:* Descargue</p>
+            <p>⏱️ *Hora:* 08:35 AM</p>
+            <p>🏭 *Planta:* Mosquera, Cundinamarca</p>
+          </div>
+        </div>
+
+        <!-- QR Code for Drivers -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center space-x-3 border-b border-slate-100 pb-3">
+              <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                QR
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-800">Código QR para Conductores</h2>
+                <p class="text-xs text-slate-500">Imprima este código en la caseta de vigilancia o báscula</p>
+              </div>
+            </div>
+
+            <div class="mt-4 flex flex-col items-center justify-center p-6 bg-slate-50 rounded-xl border border-slate-200 text-center">
+              <!-- Visual QR Representation SVG -->
+              <div class="p-3 bg-white rounded-xl shadow border border-slate-300 inline-block mb-3">
+                <svg class="w-36 h-36 text-slate-900" viewBox="0 0 100 100" fill="currentColor">
+                  <rect x="10" y="10" width="25" height="25" rx="3" fill="#0f172a"/>
+                  <rect x="15" y="15" width="15" height="15" fill="#ffffff"/>
+                  <rect x="18" y="18" width="9" height="9" fill="#0f172a"/>
+                  <rect x="65" y="10" width="25" height="25" rx="3" fill="#0f172a"/>
+                  <rect x="70" y="15" width="15" height="15" fill="#ffffff"/>
+                  <rect x="73" y="18" width="9" height="9" fill="#0f172a"/>
+                  <rect x="10" y="65" width="25" height="25" rx="3" fill="#0f172a"/>
+                  <rect x="15" y="70" width="15" height="15" fill="#ffffff"/>
+                  <rect x="18" y="73" width="9" height="9" fill="#0f172a"/>
+                  <rect x="42" y="12" width="6" height="6" fill="#0f172a"/>
+                  <rect x="52" y="12" width="6" height="6" fill="#0f172a"/>
+                  <rect x="42" y="22" width="6" height="16" fill="#0f172a"/>
+                  <rect x="52" y="32" width="6" height="6" fill="#0f172a"/>
+                  <rect x="12" y="45" width="22" height="6" fill="#0f172a"/>
+                  <rect x="42" y="45" width="16" height="16" rx="2" fill="#2563eb"/>
+                  <rect x="68" y="45" width="20" height="6" fill="#0f172a"/>
+                  <rect x="72" y="55" width="8" height="16" fill="#0f172a"/>
+                  <rect x="42" y="68" width="6" height="20" fill="#0f172a"/>
+                  <rect x="52" y="75" width="16" height="6" fill="#0f172a"/>
+                  <rect x="75" y="78" width="14" height="12" fill="#0f172a"/>
+                </svg>
+              </div>
+              <p class="text-xs font-bold text-slate-800">Escanear para Reportar Llegada / Salida</p>
+              <p class="text-[11px] text-slate-500 mt-1 max-w-xs">El conductor escanea con la cámara de su celular y accede directamente a su formulario móvil.</p>
+            </div>
+          </div>
+
+          <!-- Sharing Links Helper Box -->
+          <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-4 text-xs space-y-2">
+            <p class="font-bold text-blue-950 flex items-center gap-1.5">
+              <span>🔗 Enlaces para Compartir:</span>
+            </p>
+            <div class="space-y-1 text-slate-600 text-[11px]">
+              <p><strong>1. Para los Conductores:</strong> Envíeles el link directo o pegue el código QR en la caseta. Al abrirlo, solo verán la pantalla para digitar su placa y los 3 botones de reporte.</p>
+              <p><strong>2. Para el Administrador:</strong> Esta misma pantalla en su computadora le permite ver todos los vehículos en vivo, modificar horas con el lápiz, cambiar muelles y exportar a Excel.</p>
+            </div>
+            <div class="flex gap-2 pt-1">
+              <button type="button" id="btn-copy-driver-link-settings" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-xs shadow transition">
+                Copiar Enlace Conductor
+              </button>
+              <button type="button" id="btn-wa-driver-link" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg text-xs shadow transition flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.668-.699c.969.585 1.777.892 2.79.893 3.185 0 5.77-2.587 5.77-5.766.001-3.182-2.585-5.779-5.768-5.779zm9.969 5.768c0 5.518-4.482 10-10 10-1.745 0-3.376-.449-4.805-1.233l-5.195 1.36 1.385-5.06c-.881-1.488-1.385-3.23-1.385-5.067 0-5.518 4.482-10 10-10 5.518 0 10 4.482 10 10z"/></svg>
+                <span>Enviar Link a WhatsApp</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="pt-2 flex flex-col gap-2">
+            <button id="btn-print-posters" type="button" class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-semibold text-xs rounded-lg transition shadow flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+              <span>Imprimir Carteles de QR para Caseta y Muelles</span>
+            </button>
+            <button id="btn-switch-to-driver-view" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-lg transition shadow">
+              Abrir Vista del Conductor Ahora
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 6: Metodología y Plantilla Excel -->
+    <section id="view-method" class="space-y-6 hidden">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+        <div class="border-b border-slate-200 pb-4">
+          <h2 class="text-xl font-bold text-slate-900">Método Operativo Estándar para Control de Tiempos de Vehículos</h2>
+          <p class="text-sm text-slate-500 mt-1">Cómo estructurar el procedimiento en patio, centros de distribución (CEDIS) o plantas industriales.</p>
+        </div>
+
+        <!-- 4 Key Milestones -->
+        <div>
+          <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider text-blue-600 mb-3">1. Los 4 Hitos Cronológicos Esenciales</h3>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+              <span class="w-6 h-6 rounded-full bg-blue-600 text-white inline-flex items-center justify-center font-bold text-xs mb-2">1</span>
+              <h4 class="font-bold text-sm text-slate-800">Hora de Llegada (Check-in)</h4>
+              <p class="text-xs text-slate-600 mt-1">El conductor o guarda reporta la llegada. Inicia el cronómetro de permanencia.</p>
+            </div>
+            <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+              <span class="w-6 h-6 rounded-full bg-blue-600 text-white inline-flex items-center justify-center font-bold text-xs mb-2">2</span>
+              <h4 class="font-bold text-sm text-slate-800">Ingreso a Muelle (Dock-in)</h4>
+              <p class="text-xs text-slate-600 mt-1">Acople en la bahía de carga/descarga e inicio de maniobra.</p>
+            </div>
+            <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+              <span class="w-6 h-6 rounded-full bg-blue-600 text-white inline-flex items-center justify-center font-bold text-xs mb-2">3</span>
+              <h4 class="font-bold text-sm text-slate-800">Salida de Muelle (Dock-out)</h4>
+              <p class="text-xs text-slate-600 mt-1">Fin de cargue/descargue, sellos colocados y muelle liberado.</p>
+            </div>
+            <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+              <span class="w-6 h-6 rounded-full bg-blue-600 text-white inline-flex items-center justify-center font-bold text-xs mb-2">4</span>
+              <h4 class="font-bold text-sm text-slate-800">Salida de Portería (Check-out)</h4>
+              <p class="text-xs text-slate-600 mt-1">Firma de remisiones y salida física. Cierra el ciclo total.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calculated Times and SLAs -->
+        <div>
+          <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider text-blue-600 mb-3">2. Indicadores Clave (KPIs) y Tiempos de Proceso</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
+              <thead class="bg-slate-100 text-slate-700 font-semibold">
+                <tr>
+                  <th class="p-3">Indicador (KPI)</th>
+                  <th class="p-3">Fórmula Operativa</th>
+                  <th class="p-3">Objetivo / Meta Típica</th>
+                  <th class="p-3">¿Qué mide?</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200">
+                <tr>
+                  <td class="p-3 font-semibold text-slate-800">Tiempo de Espera en Patio (Wait Time)</td>
+                  <td class="p-3 font-mono text-blue-600 bg-blue-50/50">Hora Ingreso Muelle - Hora Llegada</td>
+                  <td class="p-3">&le; 30 - 45 minutos</td>
+                  <td class="p-3 text-slate-600">Congestión de patio y agilidad de asignación de muelles.</td>
+                </tr>
+                <tr>
+                  <td class="p-3 font-semibold text-slate-800">Tiempo de Operación en Muelle (Dwell Time)</td>
+                  <td class="p-3 font-mono text-blue-600 bg-blue-50/50">Hora Salida Muelle - Hora Ingreso Muelle</td>
+                  <td class="p-3">&le; 60 - 90 minutos (según tonelaje)</td>
+                  <td class="p-3 text-slate-600">Productividad de las cuadrillas de cargue y montacargas.</td>
+                </tr>
+                <tr>
+                  <td class="p-3 font-semibold text-slate-800">Tiempo de Trámite Documental</td>
+                  <td class="p-3 font-mono text-blue-600 bg-blue-50/50">Hora Salida Portería - Hora Salida Muelle</td>
+                  <td class="p-3">&le; 15 - 20 minutos</td>
+                  <td class="p-3 text-slate-600">Velocidad en facturación, inspección final y remisiones.</td>
+                </tr>
+                <tr>
+                  <td class="p-3 font-semibold text-slate-800">Tiempo Total de Ciclo (Turnaround Time)</td>
+                  <td class="p-3 font-mono text-blue-600 bg-blue-50/50">Hora Salida Portería - Hora Llegada</td>
+                  <td class="p-3">&le; 120 minutos</td>
+                  <td class="p-3 text-slate-600">Eficiencia global de la planta de cara a los transportadores.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Excel Formula Guide -->
+        <div>
+          <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider text-blue-600 mb-3">3. Cómo Implementarlo en Excel o Google Sheets</h3>
+          <p class="text-xs text-slate-600 mb-3">Si desea llevar este control en una hoja de cálculo, organice las columnas en el siguiente orden y utilice las fórmulas exactas:</p>
+          <div class="bg-slate-900 text-slate-200 p-4 rounded-lg font-mono text-xs overflow-x-auto space-y-2">
+            <p class="text-slate-400">// Estructura de Columnas:</p>
+            <p>Columna A: Fecha | Col B: Placa | Col C: Tipo Vehículo | Col D: Operación | Col E: Muelle</p>
+            <p>Col F: Hora Llegada (formato hh:mm) | Col G: Hora Ingreso Muelle | Col H: Hora Salida Muelle | Col I: Hora Salida Portería</p>
+            <div class="pt-2 border-t border-slate-700">
+              <p class="text-emerald-400 font-bold">// Fórmulas en Excel para calcular minutos exactos (Fila 2):</p>
+              <p><span class="text-amber-300">Tiempo Espera (minutos):</span> =SI(Y(F2&lt;&gt;"", G2&lt;&gt;""), (G2-F2)*1440, "")</p>
+              <p><span class="text-amber-300">Tiempo en Muelle (minutos):</span> =SI(Y(G2&lt;&gt;"", H2&lt;&gt;""), (H2-G2)*1440, "")</p>
+              <p><span class="text-amber-300">Tiempo Salida/Papeles (minutos):</span> =SI(Y(H2&lt;&gt;"", I2&lt;&gt;""), (I2-H2)*1440, "")</p>
+              <p><span class="text-amber-300">Tiempo Total Ciclo (minutos):</span> =SI(Y(F2&lt;&gt;"", I2&lt;&gt;""), (I2-F2)*1440, "")</p>
+              <p class="text-slate-400 mt-2">* Multiplicar por 1440 convierte la fracción de día de Excel directamente a minutos enteros.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: Nuevo Vehículo / Registro -->
+  <div id="modal-new-vehicle" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <h3 class="text-base font-bold flex items-center gap-2">
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path></svg>
+          Registrar Llegada de Vehículo
+        </h3>
+        <button id="modal-close-btn" class="text-slate-400 hover:text-white transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <form id="form-new-vehicle" class="p-6 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Placa / Matrícula *</label>
+            <input type="text" id="input-placa" required placeholder="Ej: ABC-123" class="w-full uppercase font-mono px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Tipo de Vehículo</label>
+            <select id="input-tipo" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="Tractomula">Tractomula (3S3)</option>
+              <option value="Dobletroque">Dobletroque (C3)</option>
+              <option value="Camión Sencillo">Camión Sencillo (C2)</option>
+              <option value="Turbo">Turbo / NPR</option>
+              <option value="Furgón Pequeño">Furgón / Camioneta</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Conductor</label>
+            <input type="text" id="input-conductor" placeholder="Nombre del conductor" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Transportadora / Proveedor</label>
+            <input type="text" id="input-empresa" placeholder="Empresa de transporte" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Tipo de Operación</label>
+            <select id="input-operacion" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="Descargue">Descargue (Recepción)</option>
+              <option value="Cargue">Cargue (Despacho)</option>
+              <option value="Mixto">Mixto (Cargue y Descargue)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Muelle Asignado</label>
+            <select id="input-muelle" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">-- Asignar después --</option>
+              <option value="Muelle 1">Muelle 1</option>
+              <option value="Muelle 2">Muelle 2</option>
+              <option value="Muelle 3">Muelle 3</option>
+              <option value="Muelle 4">Muelle 4</option>
+              <option value="Muelle 5">Muelle 5</option>
+              <option value="Muelle 6">Muelle 6</option>
+              <option value="Muelle 7">Muelle 7</option>
+              <option value="Muelle 8">Muelle 8</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Hora de Llegada (Check-in)</label>
+          <div class="flex items-center space-x-2">
+            <input type="time" id="input-hora-llegada" class="px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button type="button" id="btn-set-arrival-now" class="px-3 py-2 text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition">
+              Hora Actual
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Observaciones / No. Manifiesto</label>
+          <input type="text" id="input-obs" placeholder="Ej: Remisión #9482 / Carga refrigerada" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div class="pt-4 border-t border-slate-200 flex items-center justify-between">
+          <label class="flex items-center space-x-2 text-xs text-slate-600 cursor-pointer">
+            <input type="checkbox" id="check-send-wa-on-new" checked class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+            <span>Enviar notificación por WhatsApp al guardar</span>
+          </label>
+          <div class="flex items-center space-x-2">
+            <button type="button" id="btn-cancel-modal" class="px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 transition">
+              Cancelar
+            </button>
+            <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow transition">
+              Guardar y Registrar
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Editar Tiempos Manualmente -->
+  <div id="modal-edit-times" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+      <div class="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between">
+        <h3 class="text-sm font-bold">Modificar Tiempos y Muelle: <span id="edit-placa-title" class="text-blue-400 font-mono"></span></h3>
+        <button id="edit-modal-close" class="text-slate-400 hover:text-white transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <form id="form-edit-times" class="p-5 space-y-3.5">
+        <input type="hidden" id="edit-vh-id">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Muelle Asignado</label>
+          <select id="edit-muelle" class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg">
+            <option value="">Sin Asignar</option>
+            <option value="Muelle 1">Muelle 1</option>
+            <option value="Muelle 2">Muelle 2</option>
+            <option value="Muelle 3">Muelle 3</option>
+            <option value="Muelle 4">Muelle 4</option>
+            <option value="Muelle 5">Muelle 5</option>
+            <option value="Muelle 6">Muelle 6</option>
+            <option value="Muelle 7">Muelle 7</option>
+            <option value="Muelle 8">Muelle 8</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">1. Hora Llegada</label>
+            <input type="time" id="edit-llegada" class="w-full px-2 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">2. Ingreso a Muelle</label>
+            <input type="time" id="edit-ingreso-muelle" class="w-full px-2 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">3. Salida de Muelle</label>
+            <input type="time" id="edit-salida-muelle" class="w-full px-2 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">4. Salida Portería</label>
+            <input type="time" id="edit-salida-porteria" class="w-full px-2 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg">
+          </div>
+        </div>
+        <div class="pt-3 border-t border-slate-200 flex justify-end space-x-2">
+          <button type="button" id="btn-cancel-edit" class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-800">Cancelar</button>
+          <button type="submit" class="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
+    Control Operativo de Tiempos &bull; Sistema de Gestión de Muelles y Patio con Notificaciones WhatsApp
+  </footer>
+
+  <!-- Core JavaScript Logic -->
+  <script>
+    // State management
+    const STORAGE_KEY = 'vh_dock_tracker_data_v2';
+    const SETTINGS_KEY = 'vh_dock_settings_v2';
+    let vehicles = [];
+
+    // App Settings
+    let appSettings = {
+      destType: 'GROUP', // 'GROUP' or 'DIRECT'
+      groupName: 'Operaciones Patio y Muelles',
+      groupLink: '',
+      supervisorPhone: '+573100000000',
+      plantName: 'Centro de Distribución Mosquera'
+    };
+
+    // Navigation state
+    let activeTab = 'dashboard';
+
+    // Helper: format two digits
+    const pad = n => String(n).padStart(2, '0');
+
+    // Helper: get current HH:MM string
+    function getCurrentTimeString() {
+      const now = new Date();
+      return `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    }
+
+    // Helper: get current formatted date
+    function getCurrentDateFormatted() {
+      const now = new Date();
+      return `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+    }
+
+    // Helper: parse "HH:MM" to minutes from 00:00
+    function timeToMinutes(tStr) {
+      if (!tStr || !tStr.includes(':')) return null;
+      const parts = tStr.split(':');
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      if (isNaN(h) || isNaN(m)) return null;
+      return h * 60 + m;
+    }
+
+    // Helper: calculate minute difference between two "HH:MM" times
+    function calcDiffMinutes(startStr, endStr) {
+      const start = timeToMinutes(startStr);
+      const end = timeToMinutes(endStr);
+      if (start === null || end === null) return null;
+      let diff = end - start;
+      if (diff < 0) diff += 1440; // overnight adjustment
+      return diff;
+    }
+
+    // Helper: format minutes to human readable string
+    function formatMinutesDisplay(mins) {
+      if (mins === null || isNaN(mins)) return '-';
+      if (mins < 60) return `${mins} min`;
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return m > 0 ? `${h}h ${m}m` : `${h}h`;
+    }
+
+    // Toast notification function
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const bgColors = {
+        success: 'bg-emerald-600 text-white',
+        info: 'bg-blue-600 text-white',
+        warning: 'bg-amber-600 text-white',
+        danger: 'bg-rose-600 text-white'
+      };
+      toast.className = `${bgColors[type] || bgColors.info} px-4 py-2.5 rounded-lg shadow-lg text-xs font-medium flex items-center space-x-2 transition-all transform duration-200 ease-out translate-y-2 pointer-events-auto`;
+      toast.innerHTML = `
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2');
+      }, 10);
+      setTimeout(() => {
+        toast.classList.add('opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // WhatsApp Message Sender Helper
+    function sendWhatsAppNotification(messageText) {
+      const encodedMsg = encodeURIComponent(messageText);
+      if (appSettings.destType === 'GROUP') {
+        const waUrl = `https://api.whatsapp.com/send?text=${encodedMsg}`;
+        window.open(waUrl, '_blank');
+        showToast(`Abriendo WhatsApp... Seleccione el grupo "${appSettings.groupName || 'Operaciones'}"`, 'success');
+      } else {
+        const cleanPhone = (appSettings.supervisorPhone || '').replace(/[^0-9]/g, '');
+        const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodedMsg}` : `https://api.whatsapp.com/send?text=${encodedMsg}`;
+        window.open(waUrl, '_blank');
+        showToast('Abriendo WhatsApp con el reporte...', 'success');
+      }
+    }
+
+    // Format single vehicle event message for WhatsApp
+    function generateWhatsAppVehicleMessage(vh, eventType) {
+      const dateStr = getCurrentDateFormatted();
+      let eventTitle = '';
+      let eventIcon = '';
+      let specificTime = '';
+
+      if (eventType === 'LLEGADA') {
+        eventIcon = '🟢';
+        eventTitle = 'LLEGADA A PLANTA (Check-in)';
+        specificTime = vh.llegada;
+      } else if (eventType === 'INGRESO_MUELLE') {
+        eventIcon = '🔵';
+        eventTitle = `INGRESO A MUELLE (${vh.muelle || 'Muelle Asignado'})`;
+        specificTime = vh.ingresoMuelle;
+      } else if (eventType === 'SALIDA_MUELLE') {
+        eventIcon = '🟣';
+        eventTitle = `FIN DE OPERACIÓN EN MUELLE (${vh.muelle || 'Muelle'})`;
+        specificTime = vh.salidaMuelle;
+      } else if (eventType === 'SALIDA_PLANTA') {
+        eventIcon = '🔴';
+        eventTitle = 'SALIDA DEFINITIVA DE PLANTA (Despachado)';
+        specificTime = vh.salidaPorteria;
+      } else {
+        eventIcon = '🚛';
+        eventTitle = 'ESTADO OPERATIVO DE VEHÍCULO';
+        specificTime = getCurrentTimeString();
+      }
+
+      const waitMins = vh.llegada && vh.ingresoMuelle ? calcDiffMinutes(vh.llegada, vh.ingresoMuelle) : null;
+      const dockMins = vh.ingresoMuelle && vh.salidaMuelle ? calcDiffMinutes(vh.ingresoMuelle, vh.salidaMuelle) : null;
+      const totalMins = vh.llegada && vh.salidaPorteria ? calcDiffMinutes(vh.llegada, vh.salidaPorteria) : null;
+
+      let msg = `🚛 *CONTROL DE PATIO Y MUELLES*\n`;
+      msg += `🏢 *Planta:* ${appSettings.plantName}\n`;
+      msg += `📅 *Fecha:* ${dateStr}\n`;
+      msg += `----------------------------\n`;
+      msg += `${eventIcon} *EVENTO:* *${eventTitle}*\n`;
+      msg += `⏱️ *Hora del evento:* ${specificTime}\n`;
+      msg += `🚘 *Placa:* *${vh.placa}*\n`;
+      if (vh.conductor) msg += `👤 *Conductor:* ${vh.conductor}\n`;
+      if (vh.empresa) msg += `🏢 *Empresa:* ${vh.empresa}\n`;
+      if (vh.tipo) msg += `🚚 *Tipo:* ${vh.tipo}\n`;
+      msg += `📦 *Operación:* ${vh.operacion}\n`;
+      if (vh.muelle) msg += `🚪 *Muelle:* ${vh.muelle}\n`;
+
+      if (waitMins !== null) msg += `⏳ *Espera en patio:* ${formatMinutesDisplay(waitMins)}\n`;
+      if (dockMins !== null) msg += `⏱️ *Tiempo en muelle:* ${formatMinutesDisplay(dockMins)}\n`;
+      if (totalMins !== null) msg += `🏁 *Tiempo Total de Ciclo:* *${formatMinutesDisplay(totalMins)}*\n`;
+
+      if (vh.observaciones) msg += `📝 *Observaciones:* ${vh.observaciones}\n`;
+
+      return msg;
+    }
+
+    // Format Shift summary message for WhatsApp
+    function generateWhatsAppShiftSummary() {
+      const dateStr = getCurrentDateFormatted();
+      const timeStr = getCurrentTimeString();
+      const total = vehicles.length;
+      let esperaCount = 0;
+      let muelleCount = 0;
+      let salidosCount = 0;
+      let totalWait = 0, countWait = 0;
+      let totalDock = 0, countDock = 0;
+
+      vehicles.forEach(v => {
+        const st = getVehicleStatus(v);
+        if (st.code === 'ESPERA') esperaCount++;
+        else if (st.code === 'MUELLE') muelleCount++;
+        else if (st.code === 'SALIDO') salidosCount++;
+
+        if (v.llegada && v.ingresoMuelle) {
+          const w = calcDiffMinutes(v.llegada, v.ingresoMuelle);
+          if (w !== null) { totalWait += w; countWait++; }
+        }
+        if (v.ingresoMuelle && v.salidaMuelle) {
+          const d = calcDiffMinutes(v.ingresoMuelle, v.salidaMuelle);
+          if (d !== null) { totalDock += d; countDock++; }
+        }
+      });
+
+      const avgWait = countWait > 0 ? `${Math.round(totalWait / countWait)} min` : '0 min';
+      const avgDock = countDock > 0 ? `${Math.round(totalDock / countDock)} min` : '0 min';
+
+      let msg = `📊 *REPORTE OPERATIVO DE TURNO*\n`;
+      msg += `🏢 *Planta:* ${appSettings.plantName}\n`;
+      msg += `📅 *Fecha:* ${dateStr} - ${timeStr}\n`;
+      msg += `----------------------------\n`;
+      msg += `🚛 *Total Vehículos Atendidos:* ${total}\n`;
+      msg += `🟡 *En Espera (Patio):* ${esperaCount}\n`;
+      msg += `🔵 *En Muelle (Operando):* ${muelleCount}\n`;
+      msg += `🟢 *Despachados / Salidos:* ${salidosCount}\n`;
+      msg += `----------------------------\n`;
+      msg += `⏳ *Promedio Espera Patio:* ${avgWait}\n`;
+      msg += `⏱️ *Promedio Operación Muelle:* ${avgDock}\n`;
+      msg += `----------------------------\n`;
+      msg += `*Vehículos activos en operación:*\n`;
+
+      const activeVehicles = vehicles.filter(v => !v.salidaPorteria);
+      if (activeVehicles.length === 0) {
+        msg += `_No hay vehículos pendientes en patio._\n`;
+      } else {
+        activeVehicles.slice(0, 8).forEach(v => {
+          const st = getVehicleStatus(v);
+          msg += `&bull; *${v.placa}* | ${v.muelle || 'Patio'} | ${st.text} (${v.llegada})\n`;
+        });
+      }
+
+      return msg;
+    }
+
+    // Save to LocalStorage
+    function saveData() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles));
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(appSettings));
+      } catch (e) {
+        console.warn('LocalStorage error:', e);
+      }
+    }
+
+    // Load from LocalStorage
+    function loadData() {
+      try {
+        const storedSettings = localStorage.getItem(SETTINGS_KEY);
+        if (storedSettings) {
+          appSettings = Object.assign(appSettings, JSON.parse(storedSettings));
+        }
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          vehicles = JSON.parse(stored);
+          return;
+        }
+      } catch (e) {
+        console.warn('LocalStorage load error:', e);
+      }
+      loadSampleData(false);
+    }
+
+    // Sample dataset generator
+    function loadSampleData(notify = true) {
+      vehicles = [
+        {
+          id: 'vh-1',
+          placa: 'WKL-482',
+          conductor: 'Carlos Mario Gómez',
+          tipo: 'Tractomula',
+          empresa: 'TransLogística Andina',
+          operacion: 'Descargue',
+          muelle: 'Muelle 2',
+          llegada: '06:30',
+          ingresoMuelle: '07:05',
+          salidaMuelle: '08:20',
+          salidaPorteria: '08:45',
+          observaciones: 'Descargue paletizado de materia prima'
+        },
+        {
+          id: 'vh-2',
+          placa: 'SOE-194',
+          conductor: 'Hernán Darío Pineda',
+          tipo: 'Dobletroque',
+          empresa: 'Transportes del Valle',
+          operacion: 'Cargue',
+          muelle: 'Muelle 4',
+          llegada: '07:15',
+          ingresoMuelle: '07:40',
+          salidaMuelle: '',
+          salidaPorteria: '',
+          observaciones: 'Cargue de producto terminado'
+        },
+        {
+          id: 'vh-3',
+          placa: 'TJY-801',
+          conductor: 'Jorge Andrés Morales',
+          tipo: 'Turbo',
+          empresa: 'Envía Express',
+          operacion: 'Descargue',
+          muelle: 'Muelle 1',
+          llegada: '07:30',
+          ingresoMuelle: '07:50',
+          salidaMuelle: '08:35',
+          salidaPorteria: '',
+          observaciones: 'En documentación final'
+        },
+        {
+          id: 'vh-4',
+          placa: 'UFW-655',
+          conductor: 'Luis Fernando Castro',
+          tipo: 'Camión Sencillo',
+          empresa: 'Coordinadora Mercantil',
+          operacion: 'Cargue',
+          muelle: 'Muelle 6',
+          llegada: '08:00',
+          ingresoMuelle: '',
+          salidaMuelle: '',
+          salidaPorteria: '',
+          observaciones: 'Esperando asignación y alistamiento'
+        },
+        {
+          id: 'vh-5',
+          placa: 'KTO-332',
+          conductor: 'Martín Emilio Rocha',
+          tipo: 'Tractomula',
+          empresa: 'Coltanques S.A.S',
+          operacion: 'Mixto',
+          muelle: '',
+          llegada: '08:15',
+          ingresoMuelle: '',
+          salidaMuelle: '',
+          salidaPorteria: '',
+          observaciones: 'En espera en bahía externa'
+        }
+      ];
+      saveData();
+      renderAll();
+      if (notify) showToast('Datos de ejemplo cargados con éxito', 'success');
+    }
+
+    // Compute status of a vehicle
+    function getVehicleStatus(vh) {
+      if (vh.salidaPorteria) return { code: 'SALIDO', text: 'Despachado', class: 'bg-emerald-100 text-emerald-800 border-emerald-300' };
+      if (vh.salidaMuelle) return { code: 'SALIDA_MUELLE', text: 'Fin Muelle / En Trámite', class: 'bg-purple-100 text-purple-800 border-purple-300' };
+      if (vh.ingresoMuelle) return { code: 'MUELLE', text: 'En Operación Muelle', class: 'bg-blue-100 text-blue-800 border-blue-300' };
+      return { code: 'ESPERA', text: 'En Espera (Patio)', class: 'bg-amber-100 text-amber-800 border-amber-300' };
+    }
+
+    // Render KPI Cards
+    function renderKPIs() {
+      const total = vehicles.length;
+      let esperaCount = 0;
+      let muelleCount = 0;
+      let salidosCount = 0;
+      let totalWaitMins = 0, countWait = 0;
+      let totalDockMins = 0, countDock = 0;
+
+      vehicles.forEach(vh => {
+        const st = getVehicleStatus(vh);
+        if (st.code === 'ESPERA') esperaCount++;
+        else if (st.code === 'MUELLE') muelleCount++;
+        else if (st.code === 'SALIDO') salidosCount++;
+
+        if (vh.llegada && vh.ingresoMuelle) {
+          const w = calcDiffMinutes(vh.llegada, vh.ingresoMuelle);
+          if (w !== null) { totalWaitMins += w; countWait++; }
+        }
+        if (vh.ingresoMuelle && vh.salidaMuelle) {
+          const d = calcDiffMinutes(vh.ingresoMuelle, vh.salidaMuelle);
+          if (d !== null) { totalDockMins += d; countDock++; }
+        }
+      });
+
+      document.getElementById('kpi-total').textContent = total;
+      document.getElementById('kpi-espera').textContent = esperaCount;
+      document.getElementById('kpi-muelle').textContent = muelleCount;
+      document.getElementById('kpi-salidos').textContent = salidosCount;
+      document.getElementById('kpi-avg-wait').textContent = countWait > 0 ? `${Math.round(totalWaitMins / countWait)}m` : '0m';
+      document.getElementById('kpi-avg-dock').textContent = countDock > 0 ? `${Math.round(totalDockMins / countDock)}m` : '0m';
+      document.getElementById('active-count-badge').textContent = `${total} vehículo${total === 1 ? '' : 's'}`;
+    }
+
+    // Render Operations Table
+    function renderVehiclesTable() {
+      const tbody = document.getElementById('vehicle-table-body');
+      const emptyNotice = document.getElementById('empty-state-notice');
+      const search = (document.getElementById('search-input').value || '').trim().toLowerCase();
+      const filterStatus = document.getElementById('filter-status').value;
+      const filterOperacion = document.getElementById('filter-operacion').value;
+
+      const filtered = vehicles.filter(vh => {
+        const st = getVehicleStatus(vh);
+        if (filterStatus === 'ESPERA' && st.code !== 'ESPERA') return false;
+        if (filterStatus === 'MUELLE' && st.code !== 'MUELLE') return false;
+        if (filterStatus === 'SALIDO' && st.code !== 'SALIDO') return false;
+        if (filterOperacion !== 'ALL' && vh.operacion !== filterOperacion) return false;
+
+        if (search) {
+          const matchPlaca = (vh.placa || '').toLowerCase().includes(search);
+          const matchConductor = (vh.conductor || '').toLowerCase().includes(search);
+          const matchEmpresa = (vh.empresa || '').toLowerCase().includes(search);
+          const matchMuelle = (vh.muelle || '').toLowerCase().includes(search);
+          if (!matchPlaca && !matchConductor && !matchEmpresa && !matchMuelle) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        emptyNotice.classList.remove('hidden');
+        return;
+      }
+
+      emptyNotice.classList.add('hidden');
+
+      tbody.innerHTML = filtered.map(vh => {
+        const status = getVehicleStatus(vh);
+        const waitMins = vh.llegada && vh.ingresoMuelle ? calcDiffMinutes(vh.llegada, vh.ingresoMuelle) : null;
+        const dockMins = vh.ingresoMuelle && vh.salidaMuelle ? calcDiffMinutes(vh.ingresoMuelle, vh.salidaMuelle) : null;
+        const totalMins = vh.llegada && vh.salidaPorteria ? calcDiffMinutes(vh.llegada, vh.salidaPorteria) : null;
+
+        return `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100" data-id="${vh.id}">
+            <!-- Vehículo / Placa -->
+            <td class="py-3 px-3.5 align-middle">
+              <div class="flex items-center space-x-2">
+                <span class="inline-block px-2 py-0.5 rounded font-mono font-bold text-xs bg-slate-900 text-yellow-300 border border-slate-700 shadow-sm">${vh.placa}</span>
+                <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium border ${status.class}">${status.text}</span>
+              </div>
+              <div class="text-[11px] text-slate-500 font-medium mt-1">${vh.conductor || 'Sin conductor'} &bull; <span class="text-slate-400">${vh.empresa || 'Empresa n/d'}</span></div>
+              <div class="text-[10px] text-slate-400 mt-0.5">${vh.tipo}</div>
+            </td>
+
+            <!-- Operación / Muelle -->
+            <td class="py-3 px-3 align-middle">
+              <div class="font-semibold text-slate-700 text-xs">${vh.operacion}</div>
+              <div class="mt-1">
+                ${vh.muelle 
+                  ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">${vh.muelle}</span>` 
+                  : `<button class="btn-assign-dock-quick text-[11px] text-amber-600 hover:text-amber-800 underline font-medium" data-id="${vh.id}">Asignar muelle</button>`}
+              </div>
+            </td>
+
+            <!-- 1. Llegada -->
+            <td class="py-3 px-3 align-middle font-mono text-xs">
+              <div class="text-slate-900 font-semibold">${vh.llegada || '--:--'}</div>
+              <span class="text-[10px] text-slate-400">Portería</span>
+            </td>
+
+            <!-- 2. Ingreso a Muelle -->
+            <td class="py-3 px-3 align-middle font-mono text-xs">
+              ${vh.ingresoMuelle ? `
+                <div class="text-blue-700 font-semibold">${vh.ingresoMuelle}</div>
+                <span class="text-[10px] text-blue-500">Acople</span>
+              ` : `
+                <button class="btn-stamp-action px-2.5 py-1 rounded text-[11px] font-medium bg-blue-600 hover:bg-blue-500 text-white transition shadow-sm" data-action="ingresoMuelle" data-id="${vh.id}">
+                  &rarr; Entrar Muelle
+                </button>
+              `}
+            </td>
+
+            <!-- 3. Salida de Muelle -->
+            <td class="py-3 px-3 align-middle font-mono text-xs">
+              ${vh.salidaMuelle ? `
+                <div class="text-purple-700 font-semibold">${vh.salidaMuelle}</div>
+                <span class="text-[10px] text-purple-500">Desacople</span>
+              ` : vh.ingresoMuelle ? `
+                <button class="btn-stamp-action px-2.5 py-1 rounded text-[11px] font-medium bg-purple-600 hover:bg-purple-500 text-white transition shadow-sm" data-action="salidaMuelle" data-id="${vh.id}">
+                  &rarr; Salir Muelle
+                </button>
+              ` : `
+                <span class="text-slate-300 text-xs">Pendiente</span>
+              `}
+            </td>
+
+            <!-- 4. Salida de Portería -->
+            <td class="py-3 px-3 align-middle font-mono text-xs">
+              ${vh.salidaPorteria ? `
+                <div class="text-emerald-700 font-semibold">${vh.salidaPorteria}</div>
+                <span class="text-[10px] text-emerald-500">Completado</span>
+              ` : (vh.salidaMuelle || vh.ingresoMuelle) ? `
+                <button class="btn-stamp-action px-2.5 py-1 rounded text-[11px] font-medium bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-sm" data-action="salidaPorteria" data-id="${vh.id}">
+                  &check; Salida Portería
+                </button>
+              ` : `
+                <span class="text-slate-300 text-xs">Pendiente</span>
+              `}
+            </td>
+
+            <!-- Tiempos Calculados -->
+            <td class="py-3 px-3 align-middle text-xs">
+              <div class="flex flex-col space-y-0.5">
+                <span class="text-[11px] text-slate-600">
+                  <strong class="text-slate-400">Espera:</strong> ${formatMinutesDisplay(waitMins)}
+                </span>
+                <span class="text-[11px] text-slate-600">
+                  <strong class="text-slate-400">Muelle:</strong> ${formatMinutesDisplay(dockMins)}
+                </span>
+                <span class="text-[11px] font-bold text-slate-800">
+                  <strong class="text-slate-400">Ciclo Total:</strong> ${formatMinutesDisplay(totalMins)}
+                </span>
+              </div>
+            </td>
+
+            <!-- Notificar WhatsApp / Acciones -->
+            <td class="py-3 px-3 align-middle text-center">
+              <div class="flex items-center justify-center space-x-1">
+                <button title="Enviar reporte de este vehículo a WhatsApp" class="btn-share-vh-wa p-1.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-md transition" data-id="${vh.id}">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.668-.699c.969.585 1.777.892 2.79.893 3.185 0 5.77-2.587 5.77-5.766.001-3.182-2.585-5.779-5.768-5.779zm9.969 5.768c0 5.518-4.482 10-10 10-1.745 0-3.376-.449-4.805-1.233l-5.195 1.36 1.385-5.06c-.881-1.488-1.385-3.23-1.385-5.067 0-5.518 4.482-10 10-10 5.518 0 10 4.482 10 10z"/></svg>
+                </button>
+                <button title="Editar horas o muelle" class="btn-edit-vh p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition" data-id="${vh.id}">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                </button>
+                <button title="Eliminar registro" class="btn-delete-vh p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition" data-id="${vh.id}">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Render Dock Bays Visualizer
+    function renderDockGrid() {
+      const container = document.getElementById('dock-grid');
+      const docks = ['Muelle 1', 'Muelle 2', 'Muelle 3', 'Muelle 4', 'Muelle 5', 'Muelle 6', 'Muelle 7', 'Muelle 8'];
+
+      container.innerHTML = docks.map(dockName => {
+        const activeVh = vehicles.find(v => v.muelle === dockName && v.ingresoMuelle && !v.salidaMuelle);
+        const waitingVh = !activeVh ? vehicles.find(v => v.muelle === dockName && !v.ingresoMuelle && !v.salidaPorteria) : null;
+
+        if (activeVh) {
+          const dockElapsed = calcDiffMinutes(activeVh.ingresoMuelle, getCurrentTimeString()) || 0;
+          const isHighTime = dockElapsed > 60;
+          return `
+            <div class="bg-white rounded-xl border-2 ${isHighTime ? 'border-amber-400 bg-amber-50/20' : 'border-blue-400'} p-4 shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <span class="font-bold text-sm text-slate-800">${dockName}</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isHighTime ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">OCUPADO</span>
+                </div>
+                <div class="mt-3">
+                  <div class="flex items-center space-x-2">
+                    <span class="px-2 py-0.5 rounded font-mono font-bold text-xs bg-slate-900 text-yellow-300">${activeVh.placa}</span>
+                    <span class="text-xs font-semibold text-slate-700">${activeVh.operacion}</span>
+                  </div>
+                  <p class="text-xs text-slate-600 mt-1">${activeVh.conductor || 'Conductor asignado'}</p>
+                  <p class="text-[11px] text-slate-400">${activeVh.empresa || activeVh.tipo}</p>
+                </div>
+                <div class="mt-3 pt-2 border-t border-slate-100 text-xs">
+                  <div class="flex justify-between text-slate-600">
+                    <span>Ingreso a muelle:</span>
+                    <span class="font-mono font-bold">${activeVh.ingresoMuelle}</span>
+                  </div>
+                  <div class="flex justify-between mt-1 ${isHighTime ? 'text-amber-700 font-bold' : 'text-slate-600'}">
+                    <span>Tiempo en rampa:</span>
+                    <span class="font-bold">${dockElapsed} min</span>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-4 pt-2">
+                <button class="btn-stamp-action w-full py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium rounded-lg transition" data-action="salidaMuelle" data-id="${activeVh.id}">
+                  Liberar Muelle (Fin Operación)
+                </button>
+              </div>
+            </div>
+          `;
+        } else if (waitingVh) {
+          return `
+            <div class="bg-white rounded-xl border border-dashed border-amber-300 bg-amber-50/30 p-4 shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <span class="font-bold text-sm text-slate-800">${dockName}</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">RESERVADO</span>
+                </div>
+                <div class="mt-3">
+                  <div class="flex items-center space-x-2">
+                    <span class="px-2 py-0.5 rounded font-mono font-bold text-xs bg-slate-800 text-yellow-200">${waitingVh.placa}</span>
+                    <span class="text-xs font-semibold text-slate-700">${waitingVh.operacion}</span>
+                  </div>
+                  <p class="text-xs text-slate-500 mt-1">Esperando ingreso desde patio</p>
+                  <p class="text-[11px] text-slate-400">Llegó a las: ${waitingVh.llegada}</p>
+                </div>
+              </div>
+              <div class="mt-4 pt-2">
+                <button class="btn-stamp-action w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition" data-action="ingresoMuelle" data-id="${waitingVh.id}">
+                  Registrar Ingreso a Muelle
+                </button>
+              </div>
+            </div>
+          `;
+        } else {
+          return `
+            <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between opacity-80 hover:opacity-100 transition">
+              <div>
+                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <span class="font-bold text-sm text-slate-700">${dockName}</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">DISPONIBLE</span>
+                </div>
+                <div class="mt-4 text-center py-6 text-slate-400">
+                  <svg class="w-8 h-8 mx-auto text-emerald-500/50 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <p class="text-xs text-slate-500 font-medium">Bahía libre para asignación</p>
+                </div>
+              </div>
+              <div class="mt-2 text-center text-[11px] text-slate-400">
+                Listo para recibir camión
+              </div>
+            </div>
+          `;
+        }
+      }).join('');
+    }
+
+    // Render History & Export View
+    function renderHistoryTable() {
+      const tbody = document.getElementById('history-table-body');
+      tbody.innerHTML = vehicles.map(vh => {
+        const st = getVehicleStatus(vh);
+        const waitMins = vh.llegada && vh.ingresoMuelle ? calcDiffMinutes(vh.llegada, vh.ingresoMuelle) : '';
+        const dockMins = vh.ingresoMuelle && vh.salidaMuelle ? calcDiffMinutes(vh.ingresoMuelle, vh.salidaMuelle) : '';
+        const totalMins = vh.llegada && vh.salidaPorteria ? calcDiffMinutes(vh.llegada, vh.salidaPorteria) : '';
+
+        return `
+          <tr class="hover:bg-slate-50 border-b border-slate-100">
+            <td class="py-2 px-3 font-mono font-bold text-slate-900">${vh.placa}</td>
+            <td class="py-2 px-3 text-slate-700">${vh.tipo} / <span class="text-slate-400">${vh.empresa || '-'}</span></td>
+            <td class="py-2 px-3">${vh.operacion}</td>
+            <td class="py-2 px-3 font-semibold text-blue-700">${vh.muelle || '-'}</td>
+            <td class="py-2 px-3 font-mono">${vh.llegada || '-'}</td>
+            <td class="py-2 px-3 font-mono text-blue-600">${vh.ingresoMuelle || '-'}</td>
+            <td class="py-2 px-3 font-mono text-purple-600">${vh.salidaMuelle || '-'}</td>
+            <td class="py-2 px-3 font-mono text-emerald-600">${vh.salidaPorteria || '-'}</td>
+            <td class="py-2 px-3 font-semibold">${waitMins !== '' ? `${waitMins} min` : '-'}</td>
+            <td class="py-2 px-3 font-semibold">${dockMins !== '' ? `${dockMins} min` : '-'}</td>
+            <td class="py-2 px-3 font-bold text-slate-900">${totalMins !== '' ? `${totalMins} min` : '-'}</td>
+            <td class="py-2 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold border ${st.class}">${st.text}</span></td>
+            <td class="py-2 px-3 text-center">
+              <button class="btn-share-vh-wa p-1 text-emerald-600 hover:text-emerald-800" data-id="${vh.id}" title="Reenviar a WhatsApp">
+                <svg class="w-4 h-4 inline" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.668-.699c.969.585 1.777.892 2.79.893 3.185 0 5.77-2.587 5.77-5.766.001-3.182-2.585-5.779-5.768-5.779zm9.969 5.768c0 5.518-4.482 10-10 10-1.745 0-3.376-.449-4.805-1.233l-5.195 1.36 1.385-5.06c-.881-1.488-1.385-3.23-1.385-5.067 0-5.518 4.482-10 10-10 5.518 0 10 4.482 10 10z"/></svg>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Copy Driver Link function
+    function copyDriverLink() {
+      const url = window.location.href.split('#')[0] + '#conductor';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+          showToast('¡Enlace de Conductor copiado al portapapeles!', 'success');
+        }).catch(() => fallbackCopy(url));
+      } else {
+        fallbackCopy(url);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('¡Enlace de Conductor copiado al portapapeles!', 'success');
+      } catch (err) {
+        showToast('Enlace: ' + text, 'info');
+      }
+      document.body.removeChild(ta);
+    }
+
+    function shareDriverLinkWhatsApp() {
+      const url = window.location.href.split('#')[0] + '#conductor';
+      const msg = `🚛 *LINK DE AUTO-REPORTE PARA CONDUCTORES*
+Para registrar su llegada, muelle o salida en ${appSettings.plantName}, ingrese al siguiente enlace desde su celular:
+${url}`;
+      sendWhatsAppNotification(msg);
+    }
+
+    // Auto-restore driver plate from previous scan on this phone
+    function initDriverPlateMemory() {
+      try {
+        const savedPlaca = localStorage.getItem('driver_saved_placa');
+        if (savedPlaca) {
+          const inputPlaca = document.getElementById('driver-input-placa');
+          if (inputPlaca && !inputPlaca.value) {
+            inputPlaca.value = savedPlaca;
+            const badge = document.getElementById('driver-plate-remembered-badge');
+            if (badge) badge.classList.remove('hidden');
+            lookupDriverVehicle();
+          }
+        }
+      } catch (e) {
+        console.warn('Memory plate load error', e);
+      }
+    }
+
+    // Driver Portal: Lookup vehicle by Plate
+    function lookupDriverVehicle() {
+      const placa = (document.getElementById('driver-input-placa').value || '').trim().toUpperCase();
+      if (!placa) return null;
+
+      const vh = vehicles.find(v => v.placa === placa);
+      const statusCard = document.getElementById('driver-status-card');
+      const statusBadge = document.getElementById('driver-current-status-badge');
+      const timesSummary = document.getElementById('driver-current-times-summary');
+
+      if (vh) {
+        // Pre-fill fields
+        if (vh.conductor) document.getElementById('driver-input-nombre').value = vh.conductor;
+        if (vh.empresa) document.getElementById('driver-input-empresa').value = vh.empresa;
+        if (vh.operacion) document.getElementById('driver-input-operacion').value = vh.operacion;
+        if (vh.muelle) document.getElementById('driver-input-muelle').value = vh.muelle;
+        if (vh.observaciones) document.getElementById('driver-input-obs').value = vh.observaciones;
+
+        const st = getVehicleStatus(vh);
+        statusBadge.textContent = st.text;
+        statusBadge.className = `px-2 py-0.5 rounded text-[10px] font-bold border ${st.class}`;
+        
+        let timesHtml = `<div>&bull; <strong>Llegada:</strong> ${vh.llegada || '--:--'}</div>`;
+        if (vh.ingresoMuelle) timesHtml += `<div>&bull; <strong>Ingreso Muelle:</strong> ${vh.ingresoMuelle} (${vh.muelle || 'Muelle'})</div>`;
+        if (vh.salidaMuelle) timesHtml += `<div>&bull; <strong>Salida Muelle:</strong> ${vh.salidaMuelle}</div>`;
+        if (vh.salidaPorteria) timesHtml += `<div>&bull; <strong>Salida Portería:</strong> ${vh.salidaPorteria} (Ciclo Finalizado)</div>`;
+        timesSummary.innerHTML = timesHtml;
+        statusCard.classList.remove('hidden');
+        return vh;
+      } else {
+        statusCard.classList.add('hidden');
+        return null;
+      }
+    }
+
+    // Driver Action Handler (Llegada, Muelle, Fin Muelle, Salida)
+    function handleDriverAction(actionType) {
+      const placa = (document.getElementById('driver-input-placa').value || '').trim().toUpperCase();
+      if (!placa) {
+        showToast('Por favor ingrese la placa de su vehículo primero', 'warning');
+        document.getElementById('driver-input-placa').focus();
+        return;
+      }
+
+      try {
+        localStorage.setItem('driver_saved_placa', placa);
+      } catch(e) {}
+      let vh = vehicles.find(v => v.placa === placa);
+      const nowTime = getCurrentTimeString();
+      const conductor = document.getElementById('driver-input-nombre').value.trim();
+      const empresa = document.getElementById('driver-input-empresa').value.trim();
+      const operacion = document.getElementById('driver-input-operacion').value;
+      const muelle = document.getElementById('driver-input-muelle').value;
+      const obs = document.getElementById('driver-input-obs').value.trim();
+
+      if (actionType === 'LLEGADA') {
+        if (!vh) {
+          vh = {
+            id: 'vh-' + Date.now(),
+            placa,
+            tipo: 'Camión',
+            conductor,
+            empresa,
+            operacion,
+            muelle,
+            llegada: nowTime,
+            ingresoMuelle: '',
+            salidaMuelle: '',
+            salidaPorteria: '',
+            observaciones: obs
+          };
+          vehicles.unshift(vh);
+        } else {
+          vh.llegada = nowTime;
+          if (conductor) vh.conductor = conductor;
+          if (empresa) vh.empresa = empresa;
+          if (operacion) vh.operacion = operacion;
+          if (muelle) vh.muelle = muelle;
+          if (obs) vh.observaciones = obs;
+        }
+      } else {
+        // If not registered yet, auto-create arrival 15m ago or current
+        if (!vh) {
+          vh = {
+            id: 'vh-' + Date.now(),
+            placa,
+            tipo: 'Camión',
+            conductor,
+            empresa,
+            operacion,
+            muelle: muelle || 'Muelle 1',
+            llegada: nowTime,
+            ingresoMuelle: '',
+            salidaMuelle: '',
+            salidaPorteria: '',
+            observaciones: obs
+          };
+          vehicles.unshift(vh);
+        }
+        if (conductor) vh.conductor = conductor;
+        if (empresa) vh.empresa = empresa;
+        if (operacion) vh.operacion = operacion;
+        if (muelle) vh.muelle = muelle;
+        if (obs) vh.observaciones = obs;
+
+        if (actionType === 'INGRESO_MUELLE') {
+          if (!vh.muelle) vh.muelle = 'Muelle 1';
+          vh.ingresoMuelle = nowTime;
+        } else if (actionType === 'SALIDA_MUELLE') {
+          if (!vh.ingresoMuelle) vh.ingresoMuelle = vh.llegada || nowTime;
+          vh.salidaMuelle = nowTime;
+        } else if (actionType === 'SALIDA_PLANTA') {
+          vh.salidaPorteria = nowTime;
+        }
+      }
+
+      saveData();
+      renderAll();
+      lookupDriverVehicle();
+
+      // Trigger WhatsApp message for this action
+      const waMsg = generateWhatsAppVehicleMessage(vh, actionType);
+      sendWhatsAppNotification(waMsg);
+    }
+
+    // Master render function
+    function renderAll() {
+      renderKPIs();
+      if (activeTab === 'dashboard') {
+        renderVehiclesTable();
+      } else if (activeTab === 'muelles') {
+        renderDockGrid();
+      } else if (activeTab === 'history') {
+        renderHistoryTable();
+      }
+      // Update target phone and group in settings and driver view
+      const isGroup = appSettings.destType === 'GROUP';
+      const radio = document.querySelector(`input[name="dest-type"][value="${appSettings.destType}"]`);
+      if (radio) radio.checked = true;
+
+      const groupNameInput = document.getElementById('setting-group-name');
+      if (groupNameInput) groupNameInput.value = appSettings.groupName || '';
+      const groupLinkInput = document.getElementById('setting-group-link');
+      if (groupLinkInput) groupLinkInput.value = appSettings.groupLink || '';
+
+      document.getElementById('setting-phone').value = appSettings.supervisorPhone || '';
+      document.getElementById('setting-plant-name').value = appSettings.plantName || '';
+
+      const groupContainer = document.getElementById('group-fields-container');
+      const phoneContainer = document.getElementById('phone-field-container');
+      const labelGroup = document.getElementById('label-dest-group');
+      const labelDirect = document.getElementById('label-dest-direct');
+
+      if (isGroup) {
+        if (groupContainer) groupContainer.classList.remove('hidden');
+        if (phoneContainer) phoneContainer.classList.add('hidden');
+        if (labelGroup) labelGroup.className = 'flex items-center space-x-2 p-2.5 rounded-lg border-2 border-emerald-500 bg-emerald-50/50 cursor-pointer';
+        if (labelDirect) labelDirect.className = 'flex items-center space-x-2 p-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer';
+        document.getElementById('header-dest-badge').textContent = `👥 Grupo: ${appSettings.groupName || 'WhatsApp'}`;
+        document.getElementById('driver-banner-group-name').textContent = appSettings.groupName || 'Grupo de WhatsApp';
+        document.getElementById('driver-view-target-phone').textContent = `Grupo: ${appSettings.groupName || 'Operaciones'}`;
+        
+        const joinLink = document.getElementById('driver-join-group-link');
+        if (joinLink) {
+          if (appSettings.groupLink) {
+            joinLink.href = appSettings.groupLink;
+            joinLink.classList.remove('hidden');
+          } else {
+            joinLink.classList.add('hidden');
+          }
+        }
+      } else {
+        if (groupContainer) groupContainer.classList.add('hidden');
+        if (phoneContainer) phoneContainer.classList.remove('hidden');
+        if (labelDirect) labelDirect.className = 'flex items-center space-x-2 p-2.5 rounded-lg border-2 border-blue-500 bg-blue-50/50 cursor-pointer';
+        if (labelGroup) labelGroup.className = 'flex items-center space-x-2 p-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer';
+        document.getElementById('header-dest-badge').textContent = `👤 Tel: ${appSettings.supervisorPhone || 'Directo'}`;
+        document.getElementById('driver-banner-group-name').textContent = `Chat Directo (${appSettings.supervisorPhone || 'Sin configurar'})`;
+        document.getElementById('driver-view-target-phone').textContent = appSettings.supervisorPhone || 'Teléfono Directo';
+        const joinLink = document.getElementById('driver-join-group-link');
+        if (joinLink) joinLink.classList.add('hidden');
+      }
+    }
+
+    // Tab switcher
+    function switchTab(tabName) {
+      activeTab = tabName;
+      const tabs = ['dashboard', 'conductor', 'muelles', 'history', 'settings', 'method'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        const view = document.getElementById(`view-${t}`);
+        if (t === tabName) {
+          btn.className = 'py-2.5 px-4 font-medium border-b-2 border-blue-500 text-blue-400 transition whitespace-nowrap flex items-center gap-1.5';
+          view.classList.remove('hidden');
+        } else {
+          btn.className = 'py-2.5 px-4 font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition whitespace-nowrap flex items-center gap-1.5';
+          view.classList.add('hidden');
+        }
+      });
+      renderAll();
+    }
+
+    // Export CSV logic (Excel friendly with BOM)
+    function exportToCSV() {
+      if (vehicles.length === 0) {
+        showToast('No hay datos registrados para exportar', 'warning');
+        return;
+      }
+
+      const headers = [
+        'Placa',
+        'Conductor',
+        'Tipo Vehiculo',
+        'Empresa',
+        'Operacion',
+        'Muelle',
+        'Hora Llegada',
+        'Hora Ingreso Muelle',
+        'Hora Salida Muelle',
+        'Hora Salida Porteria',
+        'Tiempo Espera (min)',
+        'Tiempo en Muelle (min)',
+        'Tiempo Total Ciclo (min)',
+        'Estado',
+        'Observaciones'
+      ];
+
+      const rows = vehicles.map(vh => {
+        const st = getVehicleStatus(vh);
+        const waitMins = vh.llegada && vh.ingresoMuelle ? calcDiffMinutes(vh.llegada, vh.ingresoMuelle) : '';
+        const dockMins = vh.ingresoMuelle && vh.salidaMuelle ? calcDiffMinutes(vh.ingresoMuelle, vh.salidaMuelle) : '';
+        const totalMins = vh.llegada && vh.salidaPorteria ? calcDiffMinutes(vh.llegada, vh.salidaPorteria) : '';
+
+        return [
+          `"${vh.placa}"`,
+          `"${(vh.conductor || '').replace(/"/g, '""')}"`,
+          `"${vh.tipo}"`,
+          `"${(vh.empresa || '').replace(/"/g, '""')}"`,
+          `"${vh.operacion}"`,
+          `"${vh.muelle || ''}"`,
+          `"${vh.llegada || ''}"`,
+          `"${vh.ingresoMuelle || ''}"`,
+          `"${vh.salidaMuelle || ''}"`,
+          `"${vh.salidaPorteria || ''}"`,
+          waitMins,
+          dockMins,
+          totalMins,
+          `"${st.text}"`,
+          `"${(vh.observaciones || '').replace(/"/g, '""')}"`
+        ].join(';');
+      });
+
+      const csvContent = '\uFEFF' + headers.join(';') + '\n' + rows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Bitacora_Tiempos_Vehiculos_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Archivo CSV generado y descargado con éxito', 'success');
+    }
+
+    // Event Delegation & Setup
+    document.addEventListener('DOMContentLoaded', () => {
+      // Clock timer
+      setInterval(() => {
+        const now = new Date();
+        const str = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+        document.getElementById('current-time-clock').textContent = str;
+      }, 1000);
+
+      // Initial Data load
+      loadData();
+      renderAll();
+
+      // Navigation tab listeners
+      document.getElementById('tab-btn-dashboard').addEventListener('click', () => switchTab('dashboard'));
+      document.getElementById('tab-btn-conductor').addEventListener('click', () => switchTab('conductor'));
+      document.getElementById('tab-btn-muelles').addEventListener('click', () => switchTab('muelles'));
+      document.getElementById('tab-btn-history').addEventListener('click', () => switchTab('history'));
+      document.getElementById('tab-btn-settings').addEventListener('click', () => switchTab('settings'));
+      document.getElementById('tab-btn-method').addEventListener('click', () => switchTab('method'));
+
+      document.getElementById('btn-go-to-settings').addEventListener('click', () => switchTab('settings'));
+      document.getElementById('btn-switch-to-driver-view').addEventListener('click', () => switchTab('conductor'));
+      const btnPrint = document.getElementById('btn-print-posters'); if (btnPrint) btnPrint.addEventListener('click', () => window.print());
+      initDriverPlateMemory();
+      // Check URL hash for direct driver mode
+      if (window.location.hash === '#conductor') {
+        switchTab('conductor');
+      }
+
+      const btnCopyLink = document.getElementById('btn-copy-driver-link');
+      if (btnCopyLink) btnCopyLink.addEventListener('click', copyDriverLink);
+      const btnCopyLinkSettings = document.getElementById('btn-copy-driver-link-settings');
+      if (btnCopyLinkSettings) btnCopyLinkSettings.addEventListener('click', copyDriverLink);
+      const btnWaDriverLink = document.getElementById('btn-wa-driver-link');
+      if (btnWaDriverLink) btnWaDriverLink.addEventListener('click', shareDriverLinkWhatsApp);
+      const btnSwitchAdmin = document.getElementById('btn-switch-to-admin-view');
+      if (btnSwitchAdmin) btnSwitchAdmin.addEventListener('click', () => switchTab('dashboard'));
+
+      // Filter listeners
+      document.getElementById('search-input').addEventListener('input', renderVehiclesTable);
+      document.getElementById('filter-status').addEventListener('change', renderVehiclesTable);
+      document.getElementById('filter-operacion').addEventListener('change', renderVehiclesTable);
+
+      // Sample data & Clear buttons
+      document.getElementById('btn-quick-sample-data').addEventListener('click', () => loadSampleData(true));
+      document.getElementById('btn-clear-all').addEventListener('click', () => {
+        if (vehicles.length === 0) return;
+        vehicles = [];
+        saveData();
+        renderAll();
+        showToast('Lista de vehículos limpiada', 'info');
+      });
+
+      // Export CSV
+      document.getElementById('btn-export-csv').addEventListener('click', exportToCSV);
+
+      // Share shift summary WA button
+      document.getElementById('btn-share-shift-wa').addEventListener('click', () => {
+        const summary = generateWhatsAppShiftSummary();
+        sendWhatsAppNotification(summary);
+      });
+
+      // Driver Portal listeners
+      document.getElementById('btn-driver-search-placa').addEventListener('click', lookupDriverVehicle);
+      document.getElementById('driver-input-placa').addEventListener('blur', lookupDriverVehicle);
+
+      document.getElementById('btn-driver-llegada').addEventListener('click', () => handleDriverAction('LLEGADA'));
+      document.getElementById('btn-driver-muelle').addEventListener('click', () => handleDriverAction('INGRESO_MUELLE'));
+      document.getElementById('btn-driver-fin-muelle').addEventListener('click', () => handleDriverAction('SALIDA_MUELLE'));
+      document.getElementById('btn-driver-salida').addEventListener('click', () => handleDriverAction('SALIDA_PLANTA'));
+
+      // Settings Form
+      document.querySelectorAll('input[name="dest-type"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          appSettings.destType = e.target.value;
+          renderAll();
+        });
+      });
+
+      document.getElementById('form-settings-wa').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const selectedRadio = document.querySelector('input[name="dest-type"]:checked');
+        if (selectedRadio) appSettings.destType = selectedRadio.value;
+        const gName = document.getElementById('setting-group-name');
+        if (gName) appSettings.groupName = gName.value.trim() || 'Operaciones Patio';
+        const gLink = document.getElementById('setting-group-link');
+        if (gLink) appSettings.groupLink = gLink.value.trim();
+        appSettings.supervisorPhone = document.getElementById('setting-phone').value.trim();
+        appSettings.plantName = document.getElementById('setting-plant-name').value.trim() || 'Centro de Distribución';
+        saveData();
+        renderAll();
+        showToast('Configuración del Grupo de WhatsApp guardada', 'success');
+      });
+
+      document.getElementById('btn-test-wa').addEventListener('click', () => {
+        const testMsg = `✅ *PRUEBA DE CONEXIÓN WHATSAPP*\nSistema de Control de Tiempos y Muelles operando correctamente.\nPlanta: ${appSettings.plantName}\nHora: ${getCurrentTimeString()}`;
+        sendWhatsAppNotification(testMsg);
+      });
+
+      // Modal New Vehicle handlers
+      const modalNew = document.getElementById('modal-new-vehicle');
+      const btnOpenNew = document.getElementById('btn-open-new-vh');
+      const btnCloseNew = document.getElementById('modal-close-btn');
+      const btnCancelNew = document.getElementById('btn-cancel-modal');
+      const formNew = document.getElementById('form-new-vehicle');
+      const btnSetArrivalNow = document.getElementById('btn-set-arrival-now');
+
+      btnOpenNew.addEventListener('click', () => {
+        formNew.reset();
+        document.getElementById('input-hora-llegada').value = getCurrentTimeString();
+        modalNew.classList.remove('hidden');
+        document.getElementById('input-placa').focus();
+      });
+
+      const closeNewModal = () => modalNew.classList.add('hidden');
+      btnCloseNew.addEventListener('click', closeNewModal);
+      btnCancelNew.addEventListener('click', closeNewModal);
+
+      btnSetArrivalNow.addEventListener('click', () => {
+        document.getElementById('input-hora-llegada').value = getCurrentTimeString();
+      });
+
+      formNew.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const placa = document.getElementById('input-placa').value.trim().toUpperCase();
+        if (!placa) return;
+
+        const newVh = {
+          id: 'vh-' + Date.now(),
+          placa,
+          tipo: document.getElementById('input-tipo').value,
+          conductor: document.getElementById('input-conductor').value.trim(),
+          empresa: document.getElementById('input-empresa').value.trim(),
+          operacion: document.getElementById('input-operacion').value,
+          muelle: document.getElementById('input-muelle').value,
+          llegada: document.getElementById('input-hora-llegada').value || getCurrentTimeString(),
+          ingresoMuelle: '',
+          salidaMuelle: '',
+          salidaPorteria: '',
+          observaciones: document.getElementById('input-obs').value.trim()
+        };
+
+        vehicles.unshift(newVh);
+        saveData();
+        renderAll();
+        closeNewModal();
+        showToast(`Vehículo ${placa} registrado`, 'success');
+
+        if (document.getElementById('check-send-wa-on-new').checked) {
+          const msg = generateWhatsAppVehicleMessage(newVh, 'LLEGADA');
+          sendWhatsAppNotification(msg);
+        }
+      });
+
+      // Modal Edit Times handlers
+      const modalEdit = document.getElementById('modal-edit-times');
+      const formEdit = document.getElementById('form-edit-times');
+      const btnCloseEdit = document.getElementById('edit-modal-close');
+      const btnCancelEdit = document.getElementById('btn-cancel-edit');
+
+      const closeEditModal = () => modalEdit.classList.add('hidden');
+      btnCloseEdit.addEventListener('click', closeEditModal);
+      btnCancelEdit.addEventListener('click', closeEditModal);
+
+      formEdit.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = document.getElementById('edit-vh-id').value;
+        const vh = vehicles.find(v => v.id === id);
+        if (!vh) return;
+
+        vh.muelle = document.getElementById('edit-muelle').value;
+        vh.llegada = document.getElementById('edit-llegada').value;
+        vh.ingresoMuelle = document.getElementById('edit-ingreso-muelle').value;
+        vh.salidaMuelle = document.getElementById('edit-salida-muelle').value;
+        vh.salidaPorteria = document.getElementById('edit-salida-porteria').value;
+
+        saveData();
+        renderAll();
+        closeEditModal();
+        showToast(`Registro de ${vh.placa} actualizado`, 'info');
+      });
+
+      // Click delegation for table buttons & dock buttons
+      document.body.addEventListener('click', (e) => {
+        // Timestamp 1-click action
+        const actionBtn = e.target.closest('.btn-stamp-action');
+        if (actionBtn) {
+          const action = actionBtn.getAttribute('data-action');
+          const id = actionBtn.getAttribute('data-id');
+          const vh = vehicles.find(v => v.id === id);
+          if (!vh) return;
+
+          const nowTime = getCurrentTimeString();
+          let eventType = '';
+          if (action === 'ingresoMuelle') {
+            if (!vh.muelle) vh.muelle = 'Muelle 1';
+            vh.ingresoMuelle = nowTime;
+            eventType = 'INGRESO_MUELLE';
+            showToast(`${vh.placa} ingresó a ${vh.muelle} a las ${nowTime}`, 'info');
+          } else if (action === 'salidaMuelle') {
+            vh.salidaMuelle = nowTime;
+            eventType = 'SALIDA_MUELLE';
+            showToast(`${vh.placa} finalizó operación en muelle a las ${nowTime}`, 'info');
+          } else if (action === 'salidaPorteria') {
+            vh.salidaPorteria = nowTime;
+            eventType = 'SALIDA_PLANTA';
+            showToast(`${vh.placa} despachado de planta a las ${nowTime}`, 'success');
+          }
+          saveData();
+          renderAll();
+
+          // Auto-prompt WhatsApp notification
+          if (eventType) {
+            const msg = generateWhatsAppVehicleMessage(vh, eventType);
+            sendWhatsAppNotification(msg);
+          }
+          return;
+        }
+
+        // WhatsApp button for individual vehicle
+        const waShareBtn = e.target.closest('.btn-share-vh-wa');
+        if (waShareBtn) {
+          const id = waShareBtn.getAttribute('data-id');
+          const vh = vehicles.find(v => v.id === id);
+          if (vh) {
+            const st = getVehicleStatus(vh);
+            const msg = generateWhatsAppVehicleMessage(vh, st.code);
+            sendWhatsAppNotification(msg);
+          }
+          return;
+        }
+
+        // Quick assign dock
+        const assignDockBtn = e.target.closest('.btn-assign-dock-quick');
+        if (assignDockBtn) {
+          const id = assignDockBtn.getAttribute('data-id');
+          const vh = vehicles.find(v => v.id === id);
+          if (vh) openEditModal(vh);
+          return;
+        }
+
+        // Edit vehicle button
+        const editBtn = e.target.closest('.btn-edit-vh');
+        if (editBtn) {
+          const id = editBtn.getAttribute('data-id');
+          const vh = vehicles.find(v => v.id === id);
+          if (vh) openEditModal(vh);
+          return;
+        }
+
+        // Delete vehicle button
+        const deleteBtn = e.target.closest('.btn-delete-vh');
+        if (deleteBtn) {
+          const id = deleteBtn.getAttribute('data-id');
+          const vh = vehicles.find(v => v.id === id);
+          if (vh) {
+            vehicles = vehicles.filter(v => v.id !== id);
+            saveData();
+            renderAll();
+            showToast(`Vehículo ${vh.placa} eliminado`, 'info');
+          }
+          return;
+        }
+      });
+
+      function openEditModal(vh) {
+        document.getElementById('edit-vh-id').value = vh.id;
+        document.getElementById('edit-placa-title').textContent = vh.placa;
+        document.getElementById('edit-muelle').value = vh.muelle || '';
+        document.getElementById('edit-llegada').value = vh.llegada || '';
+        document.getElementById('edit-ingreso-muelle').value = vh.ingresoMuelle || '';
+        document.getElementById('edit-salida-muelle').value = vh.salidaMuelle || '';
+        document.getElementById('edit-salida-porteria').value = vh.salidaPorteria || '';
+        modalEdit.classList.remove('hidden');
+      }
+
+    });
+  </script>
+</body>
+</html>
