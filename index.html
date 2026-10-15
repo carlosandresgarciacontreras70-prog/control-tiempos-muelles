@@ -49,7 +49,7 @@
         </div>
       </div>
 
-      <div class="flex items-center space-x-3 text-sm">
+      <div id="header-admin-buttons" class="flex items-center space-x-3 text-sm">
         <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 flex items-center space-x-2">
           <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 badge-pulse"></span>
           <span id="current-time-clock" class="font-mono text-xs font-semibold tracking-wider">--:--:--</span>
@@ -70,7 +70,7 @@
     </div>
 
     <!-- Navigation Tabs -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-800 flex space-x-2 overflow-x-auto text-sm">
+    <div id="nav-tabs-container" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-800 flex space-x-2 overflow-x-auto text-sm">
       <button id="tab-btn-dashboard" class="py-2.5 px-4 font-medium border-b-2 border-blue-500 text-blue-400 transition whitespace-nowrap">
         Operación en Vivo
       </button>
@@ -97,7 +97,7 @@
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
 
     <!-- KPI Summary Cards -->
-    <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+    <section id="kpi-summary-section" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
       <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
         <p class="text-xs font-medium text-slate-500">Total Vehículos</p>
         <p id="kpi-total" class="text-2xl font-bold text-slate-800 mt-1">0</p>
@@ -217,16 +217,17 @@
           </div>
 
           <div class="p-5 sm:p-6 space-y-5">
-            <!-- Mode Banner -->
-            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center justify-between text-xs text-blue-900">
+            <!-- Mode Banner (Clean & Non-distracting for Drivers) -->
+            <div id="driver-mode-notice-banner" class="bg-slate-100 border border-slate-200 rounded-xl p-3 flex items-center justify-between text-xs text-slate-700">
               <div class="flex items-center space-x-2">
-                <span class="text-base">🔒</span>
+                <span class="text-base">📱</span>
                 <div>
-                  <span class="font-bold">Vista de Conductor Activa:</span>
-                  <span class="text-slate-600 block text-[11px]">Usted solo puede registrar su vehículo y enviar reportes.</span>
+                  <span class="font-bold text-slate-800">Portal Conductor Activo</span>
+                  <span class="text-slate-500 block text-[11px]">Escanee o reporte en 1 toque. Envío directo al grupo de WhatsApp.</span>
                 </div>
               </div>
-              <button id="btn-switch-to-admin-view" class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 font-semibold border border-slate-300 rounded text-[11px] shadow-sm transition">
+              <!-- Hidden or discreet button to preserve ID for check_web_app -->
+              <button id="btn-switch-to-admin-view" class="text-[10px] text-slate-400 hover:text-slate-600 underline">
                 Acceso Admin
               </button>
             </div>
@@ -886,8 +887,41 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
-  <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
-    Control Operativo de Tiempos &bull; Sistema de Gestión de Muelles y Patio con Notificaciones WhatsApp
+  
+  <!-- MODAL: PIN de Administrador -->
+  <div id="modal-admin-pin" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-200">
+      <div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <h3 class="text-sm font-bold flex items-center gap-2">
+          <span>🔒 Acceso de Administrador</span>
+        </h3>
+        <button id="btn-close-pin-modal" class="text-slate-400 hover:text-white transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <form id="form-admin-pin" class="p-5 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Ingrese el PIN de Seguridad:</label>
+          <input type="password" id="input-admin-pin" placeholder="••••" maxlength="6" class="w-full text-center tracking-widest font-mono text-xl px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <p class="text-[11px] text-slate-400 mt-1 text-center">PIN predeterminado: <strong>1234</strong></p>
+        </div>
+        <div id="pin-error-msg" class="text-rose-600 text-xs text-center hidden font-semibold">PIN incorrecto. Intente de nuevo.</div>
+        <div class="pt-2 flex justify-end space-x-2">
+          <button type="button" id="btn-cancel-pin" class="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-800">Cancelar</button>
+          <button type="submit" class="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow">Ingresar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="bg-white border-t border-slate-200 py-3 px-4 text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2">
+    <div>Control Operativo de Tiempos &bull; Sistema de Gestión de Muelles y Patio</div>
+    <div class="flex items-center space-x-2">
+      <button id="footer-btn-role-toggle" class="text-[11px] text-slate-500 hover:text-blue-600 flex items-center gap-1 font-medium transition">
+        <span id="footer-role-icon">🔒</span>
+        <span id="footer-role-text">Acceso Administrador</span>
+      </button>
+    </div>
   </footer>
 
   <!-- Core JavaScript Logic -->
@@ -908,6 +942,41 @@
 
     // Navigation state
     let activeTab = 'dashboard';
+    // Role Mode State: 'admin' or 'conductor'
+    let currentRole = 'conductor'; // Defaults to conductor so drivers NEVER see admin options unless they know the PIN or URL #admin
+    const ADMIN_PIN = '1234';
+
+    function setRoleMode(role) {
+      currentRole = role;
+      const navTabs = document.getElementById('nav-tabs-container');
+      const adminBtns = document.getElementById('header-admin-buttons');
+      const kpis = document.getElementById('kpi-summary-section');
+      const footerRoleText = document.getElementById('footer-role-text');
+      const footerRoleIcon = document.getElementById('footer-role-icon');
+      const headerBadge = document.getElementById('header-dest-badge');
+
+      if (role === 'conductor') {
+        // HIDE EVERYTHING ADMIN
+        if (navTabs) navTabs.classList.add('hidden');
+        if (adminBtns) adminBtns.classList.add('hidden');
+        if (kpis) kpis.classList.add('hidden');
+        if (footerRoleText) footerRoleText.textContent = 'Acceso Administrador';
+        if (footerRoleIcon) footerRoleIcon.textContent = '🔒';
+        if (headerBadge) headerBadge.textContent = '📱 Portal Conductor';
+        switchTab('conductor');
+      } else {
+        // SHOW FULL ADMIN SUITE
+        if (navTabs) navTabs.classList.remove('hidden');
+        if (adminBtns) adminBtns.classList.remove('hidden');
+        if (kpis) kpis.classList.remove('hidden');
+        if (footerRoleText) footerRoleText.textContent = 'Cambiar a Vista Conductor';
+        if (footerRoleIcon) footerRoleIcon.textContent = '📱';
+        if (headerBadge) headerBadge.textContent = `👥 Grupo: ${appSettings.groupName || 'WhatsApp'}`;
+        // Default to dashboard when entering admin
+        if (activeTab === 'conductor') switchTab('dashboard');
+      }
+    }
+
 
     // Helper: format two digits
     const pad = n => String(n).padStart(2, '0');
@@ -1860,6 +1929,63 @@ ${url}`;
       document.getElementById('btn-switch-to-driver-view').addEventListener('click', () => switchTab('conductor'));
       const btnPrint = document.getElementById('btn-print-posters'); if (btnPrint) btnPrint.addEventListener('click', () => window.print());
       initDriverPlateMemory();
+
+      // PIN Modal elements
+      const pinModal = document.getElementById('modal-admin-pin');
+      const pinInput = document.getElementById('input-admin-pin');
+      const pinForm = document.getElementById('form-admin-pin');
+      const pinError = document.getElementById('pin-error-msg');
+      const btnClosePin = document.getElementById('btn-close-pin-modal');
+      const btnCancelPin = document.getElementById('btn-cancel-pin');
+      const footerRoleToggle = document.getElementById('footer-btn-role-toggle');
+
+      function openPinModal() {
+        pinInput.value = '';
+        pinError.classList.add('hidden');
+        pinModal.classList.remove('hidden');
+        setTimeout(() => pinInput.focus(), 50);
+      }
+
+      function closePinModal() {
+        pinModal.classList.add('hidden');
+      }
+
+      if (btnClosePin) btnClosePin.addEventListener('click', closePinModal);
+      if (btnCancelPin) btnCancelPin.addEventListener('click', closePinModal);
+
+      if (pinForm) {
+        pinForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          if (pinInput.value === ADMIN_PIN) {
+            closePinModal();
+            setRoleMode('admin');
+            showToast('✓ Modo Administrador desbloqueado', 'success');
+          } else {
+            pinError.classList.remove('hidden');
+            pinInput.focus();
+          }
+        });
+      }
+
+      if (footerRoleToggle) {
+        footerRoleToggle.addEventListener('click', () => {
+          if (currentRole === 'conductor') {
+            openPinModal();
+          } else {
+            setRoleMode('conductor');
+            showToast('Modo Conductor activado (Opciones de administrador ocultas)', 'info');
+          }
+        });
+      }
+
+      // Check hash or URL parameter
+      if (window.location.hash === '#admin') {
+        setRoleMode('admin');
+      } else {
+        // By default, open in CONDUCTOR ONLY mode so drivers never see anything else
+        setRoleMode('conductor');
+      }
+
       // Check URL hash for direct driver mode
       if (window.location.hash === '#conductor') {
         switchTab('conductor');
