@@ -140,6 +140,12 @@
             <input type="text" id="search-input" placeholder="Buscar por placa, conductor..." class="pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-60">
             <svg class="w-4 h-4 absolute left-2.5 top-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           </div>
+          <select id="filter-sede" class="py-1.5 px-3 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-700">
+            <option value="ALL">📍 Todas las Sedes (3)</option>
+            <option value="INNOVA">Sede INNOVA</option>
+            <option value="PLANTA FUNZA">Sede PLANTA FUNZA</option>
+            <option value="SANTO DOMINGO">Sede SANTO DOMINGO</option>
+          </select>
           <select id="filter-status" class="py-1.5 px-3 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="ALL">Todos los Estados</option>
             <option value="ESPERA">Solo en Espera (Patio)</option>
@@ -245,6 +251,26 @@
                 Unirme al Grupo
               </a>
             </div>
+                        <!-- Sede Selector for Drivers (3 Buttons for instant tap) -->
+            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+              <label class="block text-xs font-bold text-slate-800 uppercase mb-2 flex items-center justify-between">
+                <span>📍 Sede de la Empresa *</span>
+                <span class="text-[10px] text-slate-400 font-normal">Toque su ubicación actual</span>
+              </label>
+              <div class="grid grid-cols-3 gap-2">
+                <button type="button" class="btn-select-sede py-2 px-2 rounded-lg text-xs font-bold border-2 border-blue-600 bg-blue-50 text-blue-700 transition text-center shadow-sm" data-sede="PLANTA FUNZA">
+                  PLANTA FUNZA
+                </button>
+                <button type="button" class="btn-select-sede py-2 px-2 rounded-lg text-xs font-bold border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition text-center shadow-sm" data-sede="INNOVA">
+                  INNOVA
+                </button>
+                <button type="button" class="btn-select-sede py-2 px-2 rounded-lg text-xs font-bold border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition text-center shadow-sm" data-sede="SANTO DOMINGO">
+                  SANTO DOMINGO
+                </button>
+              </div>
+              <input type="hidden" id="driver-input-sede" value="PLANTA FUNZA">
+            </div>
+
             <!-- Vehicle Selection / Placa Entry -->
             <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
               <div>
@@ -525,6 +551,17 @@
               </button>
             </div>
 
+                        <!-- Admin PIN Setting Field -->
+            <div class="bg-slate-50 border border-slate-200 p-3.5 rounded-xl space-y-1.5">
+              <label class="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <span>🔒 PIN de Seguridad para Administrador</span>
+              </label>
+              <div class="flex items-center gap-2">
+                <input type="text" id="setting-admin-pin" placeholder="1234" maxlength="8" class="font-mono text-sm px-3 py-1.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none w-36">
+                <span class="text-[11px] text-slate-500">De 4 a 8 dígitos o caracteres para desbloquear el modo admin.</span>
+              </div>
+            </div>
+
             <div>
               <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">
                 Nombre de la Empresa / Planta
@@ -747,6 +784,14 @@
       </div>
 
       <form id="form-new-vehicle" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Sede de Llegada *</label>
+          <select id="input-sede" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-800">
+            <option value="PLANTA FUNZA">PLANTA FUNZA</option>
+            <option value="INNOVA">INNOVA</option>
+            <option value="SANTO DOMINGO">SANTO DOMINGO</option>
+          </select>
+        </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Placa / Matrícula *</label>
@@ -844,9 +889,18 @@
       </div>
       <form id="form-edit-times" class="p-5 space-y-3.5">
         <input type="hidden" id="edit-vh-id">
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Muelle Asignado</label>
-          <select id="edit-muelle" class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Sede</label>
+            <select id="edit-sede" class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg font-semibold text-slate-800">
+              <option value="PLANTA FUNZA">PLANTA FUNZA</option>
+              <option value="INNOVA">INNOVA</option>
+              <option value="SANTO DOMINGO">SANTO DOMINGO</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Muelle Asignado</label>
+            <select id="edit-muelle" class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg">
             <option value="">Sin Asignar</option>
             <option value="Muelle 1">Muelle 1</option>
             <option value="Muelle 2">Muelle 2</option>
@@ -857,6 +911,7 @@
             <option value="Muelle 7">Muelle 7</option>
             <option value="Muelle 8">Muelle 8</option>
           </select>
+          </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
@@ -937,7 +992,8 @@
       groupName: 'Operaciones Patio y Muelles',
       groupLink: '',
       supervisorPhone: '+573100000000',
-      plantName: 'Centro de Distribución Mosquera'
+      plantName: 'Centro de Distribución Mosquera',
+      adminPin: '1234'
     };
 
     // Navigation state
@@ -1096,7 +1152,8 @@
       const totalMins = vh.llegada && vh.salidaPorteria ? calcDiffMinutes(vh.llegada, vh.salidaPorteria) : null;
 
       let msg = `🚛 *CONTROL DE PATIO Y MUELLES*\n`;
-      msg += `🏢 *Planta:* ${appSettings.plantName}\n`;
+      msg += `🏢 *Sede:* *${vh.sede || 'PLANTA FUNZA'}*\n`;
+      msg += `🏭 *Empresa:* ${appSettings.plantName}\n`;
       msg += `📅 *Fecha:* ${dateStr}\n`;
       msg += `----------------------------\n`;
       msg += `${eventIcon} *EVENTO:* *${eventTitle}*\n`;
@@ -1217,7 +1274,7 @@
           ingresoMuelle: '07:05',
           salidaMuelle: '08:20',
           salidaPorteria: '08:45',
-          observaciones: 'Descargue paletizado de materia prima'
+          sede: 'PLANTA FUNZA', observaciones: 'Descargue paletizado de materia prima'
         },
         {
           id: 'vh-2',
@@ -1231,7 +1288,7 @@
           ingresoMuelle: '07:40',
           salidaMuelle: '',
           salidaPorteria: '',
-          observaciones: 'Cargue de producto terminado'
+          sede: 'INNOVA', observaciones: 'Cargue de producto terminado'
         },
         {
           id: 'vh-3',
@@ -1245,7 +1302,7 @@
           ingresoMuelle: '07:50',
           salidaMuelle: '08:35',
           salidaPorteria: '',
-          observaciones: 'En documentación final'
+          sede: 'SANTO DOMINGO', observaciones: 'En documentación final'
         },
         {
           id: 'vh-4',
@@ -1259,7 +1316,7 @@
           ingresoMuelle: '',
           salidaMuelle: '',
           salidaPorteria: '',
-          observaciones: 'Esperando asignación y alistamiento'
+          sede: 'PLANTA FUNZA', observaciones: 'Esperando asignación y alistamiento'
         },
         {
           id: 'vh-5',
@@ -1273,7 +1330,7 @@
           ingresoMuelle: '',
           salidaMuelle: '',
           salidaPorteria: '',
-          observaciones: 'En espera en bahía externa'
+          sede: 'INNOVA', observaciones: 'En espera en bahía externa'
         }
       ];
       saveData();
@@ -1328,11 +1385,13 @@
       const tbody = document.getElementById('vehicle-table-body');
       const emptyNotice = document.getElementById('empty-state-notice');
       const search = (document.getElementById('search-input').value || '').trim().toLowerCase();
+      const filterSede = document.getElementById('filter-sede') ? document.getElementById('filter-sede').value : 'ALL';
       const filterStatus = document.getElementById('filter-status').value;
       const filterOperacion = document.getElementById('filter-operacion').value;
 
       const filtered = vehicles.filter(vh => {
         const st = getVehicleStatus(vh);
+        if (filterSede !== 'ALL' && (vh.sede || 'PLANTA FUNZA') !== filterSede) return false;
         if (filterStatus === 'ESPERA' && st.code !== 'ESPERA') return false;
         if (filterStatus === 'MUELLE' && st.code !== 'MUELLE') return false;
         if (filterStatus === 'SALIDO' && st.code !== 'SALIDO') return false;
@@ -1366,8 +1425,9 @@
           <tr class="hover:bg-slate-50 transition border-b border-slate-100" data-id="${vh.id}">
             <!-- Vehículo / Placa -->
             <td class="py-3 px-3.5 align-middle">
-              <div class="flex items-center space-x-2">
+              <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
                 <span class="inline-block px-2 py-0.5 rounded font-mono font-bold text-xs bg-slate-900 text-yellow-300 border border-slate-700 shadow-sm">${vh.placa}</span>
+                <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">📍 ${vh.sede || 'PLANTA FUNZA'}</span>
                 <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium border ${status.class}">${status.text}</span>
               </div>
               <div class="text-[11px] text-slate-500 font-medium mt-1">${vh.conductor || 'Sin conductor'} &bull; <span class="text-slate-400">${vh.empresa || 'Empresa n/d'}</span></div>
@@ -1689,6 +1749,7 @@ ${url}`;
       } catch(e) {}
       let vh = vehicles.find(v => v.placa === placa);
       const nowTime = getCurrentTimeString();
+      const sede = document.getElementById('driver-input-sede') ? document.getElementById('driver-input-sede').value : 'PLANTA FUNZA';
       const conductor = document.getElementById('driver-input-nombre').value.trim();
       const empresa = document.getElementById('driver-input-empresa').value.trim();
       const operacion = document.getElementById('driver-input-operacion').value;
@@ -1700,6 +1761,7 @@ ${url}`;
           vh = {
             id: 'vh-' + Date.now(),
             placa,
+            sede,
             tipo: 'Camión',
             conductor,
             empresa,
@@ -1714,6 +1776,7 @@ ${url}`;
           vehicles.unshift(vh);
         } else {
           vh.llegada = nowTime;
+          if (sede) vh.sede = sede;
           if (conductor) vh.conductor = conductor;
           if (empresa) vh.empresa = empresa;
           if (operacion) vh.operacion = operacion;
@@ -1739,7 +1802,8 @@ ${url}`;
           };
           vehicles.unshift(vh);
         }
-        if (conductor) vh.conductor = conductor;
+        if (sede) vh.sede = sede;
+          if (conductor) vh.conductor = conductor;
         if (empresa) vh.empresa = empresa;
         if (operacion) vh.operacion = operacion;
         if (muelle) vh.muelle = muelle;
@@ -1787,6 +1851,8 @@ ${url}`;
 
       document.getElementById('setting-phone').value = appSettings.supervisorPhone || '';
       document.getElementById('setting-plant-name').value = appSettings.plantName || '';
+      const pinSettingInput = document.getElementById('setting-admin-pin');
+      if (pinSettingInput) pinSettingInput.value = appSettings.adminPin || '1234';
 
       const groupContainer = document.getElementById('group-fields-container');
       const phoneContainer = document.getElementById('phone-field-container');
@@ -1852,6 +1918,7 @@ ${url}`;
       const headers = [
         'Placa',
         'Conductor',
+        'Sede',
         'Tipo Vehiculo',
         'Empresa',
         'Operacion',
@@ -1876,6 +1943,7 @@ ${url}`;
         return [
           `"${vh.placa}"`,
           `"${(vh.conductor || '').replace(/"/g, '""')}"`,
+          `"${vh.sede || 'PLANTA FUNZA'}"`,
           `"${vh.tipo}"`,
           `"${(vh.empresa || '').replace(/"/g, '""')}"`,
           `"${vh.operacion}"`,
@@ -1956,7 +2024,8 @@ ${url}`;
       if (pinForm) {
         pinForm.addEventListener('submit', (e) => {
           e.preventDefault();
-          if (pinInput.value === ADMIN_PIN) {
+          const validPin = appSettings.adminPin || ADMIN_PIN;
+          if (pinInput.value === validPin) {
             closePinModal();
             setRoleMode('admin');
             showToast('✓ Modo Administrador desbloqueado', 'success');
@@ -2018,6 +2087,37 @@ ${url}`;
       // Export CSV
       document.getElementById('btn-export-csv').addEventListener('click', exportToCSV);
 
+      // Sede Selection Buttons in Driver Portal
+      document.querySelectorAll('.btn-select-sede').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const chosenSede = btn.getAttribute('data-sede');
+          const hiddenInput = document.getElementById('driver-input-sede');
+          if (hiddenInput) hiddenInput.value = chosenSede;
+
+          document.querySelectorAll('.btn-select-sede').forEach(b => {
+            b.className = 'btn-select-sede py-2 px-2 rounded-lg text-xs font-bold border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition text-center shadow-sm';
+          });
+          btn.className = 'btn-select-sede py-2 px-2 rounded-lg text-xs font-bold border-2 border-blue-600 bg-blue-50 text-blue-700 transition text-center shadow-sm';
+          try {
+            localStorage.setItem('driver_saved_sede', chosenSede);
+          } catch(e) {}
+          showToast(`Sede seleccionada: ${chosenSede}`, 'info');
+        });
+      });
+
+      // Auto-restore saved sede
+      try {
+        const savedSede = localStorage.getItem('driver_saved_sede');
+        if (savedSede) {
+          const btnMatch = document.querySelector(`.btn-select-sede[data-sede="${savedSede}"]`);
+          if (btnMatch) btnMatch.click();
+        }
+      } catch(e) {}
+
+      const filterSedeSelect = document.getElementById('filter-sede');
+      if (filterSedeSelect) filterSedeSelect.addEventListener('change', renderVehiclesTable);
+
+
       // Share shift summary WA button
       document.getElementById('btn-share-shift-wa').addEventListener('click', () => {
         const summary = generateWhatsAppShiftSummary();
@@ -2051,9 +2151,13 @@ ${url}`;
         if (gLink) appSettings.groupLink = gLink.value.trim();
         appSettings.supervisorPhone = document.getElementById('setting-phone').value.trim();
         appSettings.plantName = document.getElementById('setting-plant-name').value.trim() || 'Centro de Distribución';
+        const newPinInput = document.getElementById('setting-admin-pin');
+        if (newPinInput && newPinInput.value.trim()) {
+          appSettings.adminPin = newPinInput.value.trim();
+        }
         saveData();
         renderAll();
-        showToast('Configuración del Grupo de WhatsApp guardada', 'success');
+        showToast('Configuración y PIN de seguridad guardados', 'success');
       });
 
       document.getElementById('btn-test-wa').addEventListener('click', () => {
@@ -2092,6 +2196,7 @@ ${url}`;
         const newVh = {
           id: 'vh-' + Date.now(),
           placa,
+          sede: document.getElementById('input-sede') ? document.getElementById('input-sede').value : 'PLANTA FUNZA',
           tipo: document.getElementById('input-tipo').value,
           conductor: document.getElementById('input-conductor').value.trim(),
           empresa: document.getElementById('input-empresa').value.trim(),
@@ -2132,6 +2237,7 @@ ${url}`;
         const vh = vehicles.find(v => v.id === id);
         if (!vh) return;
 
+        vh.sede = document.getElementById('edit-sede') ? document.getElementById('edit-sede').value : vh.sede;
         vh.muelle = document.getElementById('edit-muelle').value;
         vh.llegada = document.getElementById('edit-llegada').value;
         vh.ingresoMuelle = document.getElementById('edit-ingreso-muelle').value;
@@ -2230,6 +2336,7 @@ ${url}`;
       function openEditModal(vh) {
         document.getElementById('edit-vh-id').value = vh.id;
         document.getElementById('edit-placa-title').textContent = vh.placa;
+        if (document.getElementById('edit-sede')) document.getElementById('edit-sede').value = vh.sede || 'PLANTA FUNZA';
         document.getElementById('edit-muelle').value = vh.muelle || '';
         document.getElementById('edit-llegada').value = vh.llegada || '';
         document.getElementById('edit-ingreso-muelle').value = vh.ingresoMuelle || '';
