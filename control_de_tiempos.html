@@ -1,75 +1,437 @@
-<!-- ... existing code ... -->
-    let mqttClient = null;
-    let isMqttConnected = false;
-    let mqttClientId = 'pepsico_' + Math.random().toString(16).substring(2, 10);
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Tiempos - PepsiCo</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Firebase Realtime Database SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    .bg-pepsico { background-color: #002D62; }
+    .text-pepsico { color: #002D62; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800">
 
-    // BroadcastChannel helper for same-device cross-tab communication
-    let localBroadcast = null;
-    try {
-      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-        localBroadcast = new BroadcastChannel('pepsico_local_dock_sync');
-        localBroadcast.onmessage = (event) => {
-          if (event.data) {
-            if (event.data.type === 'LIVE_EVENT' && event.data.vehicle) {
-              handleIncomingLiveVehicle(event.data.vehicle, event.data.eventType);
-            } else if (Array.isArray(event.data.vehicles)) {
-              mergeVehiclesList(event.data.vehicles);
-            }
-          }
-        };
+  <!-- CABECERA PRINCIPAL -->
+  <header class="bg-pepsico text-white shadow-md p-4 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="bg-white p-1 rounded-lg">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/PepsiCo_logo.svg/320px-PepsiCo_logo.svg.png" alt="PepsiCo" class="h-9 object-contain">
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">Control de Tiempos</h1>
+          <p class="text-xs text-blue-200">INNOVA • PLANTA FUNZA • SANTO DOMINGO</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="syncStatus" class="text-xs bg-emerald-500 text-white px-2.5 py-1 rounded-full font-semibold flex items-center gap-1 shadow">
+          <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Firebase Conectado
+        </span>
+        <button id="toggleViewBtn" onclick="toggleVista()" class="text-xs bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-1.5 rounded-lg text-white transition">
+          🔒 Vista Admin
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== VISTA DEL CONDUCTOR (MÓVIL) ==================== -->
+  <main id="portalConductor" class="max-w-md mx-auto p-4 space-y-4">
+    <div class="bg-white rounded-2xl shadow-xl p-5 border border-slate-200">
+      
+      <div class="text-center mb-4">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Auto-Reporte de Transportador</span>
+        <h2 class="text-lg font-bold text-slate-800">Registro de Movimiento</h2>
+      </div>
+
+      <!-- Selección de Sede -->
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase">1. Seleccione la Sede:</label>
+        <div class="grid grid-cols-3 gap-1.5" id="sedeButtons">
+          <button type="button" onclick="seleccionarSede('PLANTA FUNZA')" id="btnSede-PLANTA FUNZA" class="sede-btn py-2.5 px-2 text-xs font-bold rounded-xl border border-blue-600 bg-blue-50 text-blue-800 text-center transition">
+            PLANTA FUNZA
+          </button>
+          <button type="button" onclick="seleccionarSede('INNOVA')" id="btnSede-INNOVA" class="sede-btn py-2.5 px-2 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-600 text-center transition">
+            INNOVA
+          </button>
+          <button type="button" onclick="seleccionarSede('SANTO DOMINGO')" id="btnSede-SANTO DOMINGO" class="sede-btn py-2.5 px-2 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-600 text-center transition">
+            SANTO DOMINGO
+          </button>
+        </div>
+      </div>
+
+      <!-- Datos del Vehículo -->
+      <div class="space-y-3 mb-5">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">PLACA DEL VEHÍCULO:</label>
+          <input type="text" id="driverPlaca" placeholder="EJ: WKL482" uppercase class="w-full text-center text-2xl font-black tracking-widest uppercase border-2 border-slate-300 rounded-xl p-2.5 focus:border-blue-600 focus:outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">CONDUCTOR:</label>
+            <input type="text" id="driverNombre" placeholder="Nombre completo" class="w-full text-xs border border-slate-300 rounded-lg p-2 focus:border-blue-600 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">TRANSPORTADORA:</label>
+            <input type="text" id="driverEmpresa" placeholder="Empresa / Propietario" class="w-full text-xs border border-slate-300 rounded-lg p-2 focus:border-blue-600 focus:outline-none">
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTONES DE REPORTE -->
+      <div class="space-y-2.5">
+        <button onclick="reportarEventoConductor('LLEGADA')" id="btnLlegada" class="w-full py-4 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-black rounded-xl shadow-lg shadow-emerald-600/30 flex items-center justify-between transition text-sm">
+          <span>🟢 1. LLEGADA A PLANTA FUNZA</span>
+          <span class="text-xs font-normal bg-emerald-700/60 px-2 py-0.5 rounded">Check-in</span>
+        </button>
+
+        <button onclick="reportarEventoConductor('MUELLE')" class="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold rounded-xl shadow-lg shadow-blue-600/30 flex items-center justify-between transition text-sm">
+          <span>🔵 2. INGRESO A MUELLE</span>
+          <span class="text-xs font-normal bg-blue-700/60 px-2 py-0.5 rounded">Bahía</span>
+        </button>
+
+        <button onclick="reportarEventoConductor('SALIDA')" id="btnSalida" class="w-full py-3.5 px-4 bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white font-bold rounded-xl shadow-lg shadow-rose-600/30 flex items-center justify-between transition text-sm">
+          <span>🔴 3. SALIDA DE PLANTA FUNZA</span>
+          <span class="text-xs font-normal bg-rose-700/60 px-2 py-0.5 rounded">Despacho</span>
+        </button>
+      </div>
+
+      <div id="driverMsg" class="mt-4 hidden p-3 rounded-xl text-xs font-medium text-center"></div>
+
+      <div class="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center text-[11px] text-slate-400">
+        <span>Sincronizado con Portería</span>
+        <button onclick="solicitarPinAdmin()" class="text-slate-500 hover:text-slate-800 font-semibold underline">
+          🔒 Acceso Oficina
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== VISTA DEL ADMINISTRADOR (OFICINA) ==================== -->
+  <main id="panelAdmin" class="max-w-6xl mx-auto p-4 space-y-5 hidden">
+    
+    <!-- Filtros y Métricas Rápidas -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <span class="text-xs text-slate-500 font-semibold">Total Vehículos Hoy</span>
+        <p id="kpiTotal" class="text-2xl font-black text-slate-800 mt-1">0</p>
+      </div>
+      <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 shadow-sm">
+        <span class="text-xs text-amber-700 font-bold">En Espera (Patio)</span>
+        <p id="kpiEspera" class="text-2xl font-black text-amber-800 mt-1">0</p>
+      </div>
+      <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 shadow-sm">
+        <span class="text-xs text-blue-700 font-bold">En Muelle</span>
+        <p id="kpiMuelle" class="text-2xl font-black text-blue-800 mt-1">0</p>
+      </div>
+      <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200 shadow-sm">
+        <span class="text-xs text-emerald-700 font-bold">Completados / Salidos</span>
+        <p id="kpiSalidos" class="text-2xl font-black text-emerald-800 mt-1">0</p>
+      </div>
+    </div>
+
+    <!-- Tabla de Operación en Vivo -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3">
+        <div>
+          <h2 class="font-bold text-slate-800">Flujo Operativo de Vehículos en Patio y Muelle</h2>
+          <p class="text-xs text-slate-500">Se actualiza automáticamente con cada movimiento de los conductores</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <select id="filtroSede" onchange="renderizarTabla()" class="text-xs font-semibold border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white">
+            <option value="TODAS">📍 Todas las Sedes</option>
+            <option value="PLANTA FUNZA">PLANTA FUNZA</option>
+            <option value="INNOVA">INNOVA</option>
+            <option value="SANTO DOMINGO">SANTO DOMINGO</option>
+          </select>
+          <button onclick="exportarCSV()" class="text-xs bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-emerald-700">
+            Exportar Excel
+          </button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600 uppercase font-bold border-b border-slate-200">
+              <th class="p-3">Sede</th>
+              <th class="p-3">Placa</th>
+              <th class="p-3">Conductor</th>
+              <th class="p-3">Llegada</th>
+              <th class="p-3">Ingreso Muelle</th>
+              <th class="p-3">Salida</th>
+              <th class="p-3">Tiempo Patio</th>
+              <th class="p-3">Estado</th>
+              <th class="p-3 text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tablaVehiculos" class="divide-y divide-slate-100">
+            <!-- Filas dinámicas en tiempo real -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Acceso para volver a vista conductor -->
+    <div class="text-center">
+      <button onclick="cambiarAVista('conductor')" class="text-xs text-slate-500 hover:text-slate-800 font-semibold underline">
+        ← Volver a la Vista Móvil de Conductor
+      </button>
+    </div>
+  </main>
+
+  <!-- ==================== LÓGICA DE TIEMPO REAL CON FIREBASE ==================== -->
+  <script>
+    // 1. Conexión con tu base de datos de Firebase
+    const firebaseConfig = {
+      databaseURL: "https://pepsico-control-tiempos-default-rtdb.firebaseio.com/"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const vehiculosRef = db.ref('vehiculos_en_vivo');
+
+    let sedeSeleccionada = localStorage.getItem('pepsico_sede') || 'PLANTA FUNZA';
+    let vehiculosGlobal = {};
+    let adminAuth = false;
+
+    // Inicializar interfaz
+    window.addEventListener('DOMContentLoaded', () => {
+      seleccionarSede(sedeSeleccionada);
+      
+      const savedPlaca = localStorage.getItem('pepsico_placa');
+      if (savedPlaca) document.getElementById('driverPlaca').value = savedPlaca;
+      const savedNombre = localStorage.getItem('pepsico_nombre');
+      if (savedNombre) document.getElementById('driverNombre').value = savedNombre;
+
+      // Si la URL tiene #admin, intentar entrar directo
+      if (window.location.hash === '#admin') {
+        adminAuth = true;
+        cambiarAVista('admin');
       }
-    } catch (e) {
-      console.warn('BroadcastChannel not supported or restricted:', e);
+
+      // Escuchar cambios de Firebase en TIEMPO REAL
+      vehiculosRef.on('value', (snapshot) => {
+        vehiculosGlobal = snapshot.val() || {};
+        renderizarTabla();
+        document.getElementById('syncStatus').className = "text-xs bg-emerald-500 text-white px-2.5 py-1 rounded-full font-semibold flex items-center gap-1 shadow";
+        document.getElementById('syncStatus').innerHTML = '<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Firebase Conectado';
+      }, (error) => {
+        console.error(error);
+        document.getElementById('syncStatus').className = "text-xs bg-rose-500 text-white px-2.5 py-1 rounded-full font-semibold";
+        document.getElementById('syncStatus').textContent = "⚠️ Error de Conexión";
+      });
+    });
+
+    // Cambio visual de sedes
+    function seleccionarSede(sede) {
+      sedeSeleccionada = sede;
+      localStorage.setItem('pepsico_sede', sede);
+
+      document.querySelectorAll('.sede-btn').forEach(b => {
+        b.className = "sede-btn py-2.5 px-2 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-600 text-center transition";
+      });
+      const activeBtn = document.getElementById('btnSede-' + sede);
+      if (activeBtn) {
+        activeBtn.className = "sede-btn py-2.5 px-2 text-xs font-bold rounded-xl border border-blue-600 bg-blue-50 text-blue-800 text-center transition";
+      }
+
+      document.getElementById('btnLlegada').innerHTML = `<span>🟢 1. LLEGADA A ${sede}</span><span class="text-xs font-normal bg-emerald-700/60 px-2 py-0.5 rounded">Check-in</span>`;
+      document.getElementById('btnSalida').innerHTML = `<span>🔴 3. SALIDA DE ${sede}</span><span class="text-xs font-normal bg-rose-700/60 px-2 py-0.5 rounded">Despacho</span>`;
     }
 
-    // Helper: update cloud sync status badge in the UI
-    function updateSyncBadge(isConnected) {
-      const badge = document.getElementById('cloud-sync-status-badge');
-      const text = document.getElementById('cloud-sync-text');
-      if (!badge || !text) return;
+    // Reportar movimiento desde el celular del Conductor
+    function reportarEventoConductor(tipo) {
+      const placa = document.getElementById('driverPlaca').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const nombre = document.getElementById('driverNombre').value.trim() || 'No reportado';
+      const empresa = document.getElementById('driverEmpresa').value.trim() || 'No reportada';
 
-      if (isConnected) {
-        badge.className = 'px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-1.5 shadow-sm';
-        text.textContent = 'En Vivo (Sincronizado al Instante)';
-        text.className = 'font-semibold text-[11px] text-emerald-800';
-      } else {
-        badge.className = 'px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-1.5 shadow-sm';
-        text.textContent = 'Modo Local (Reconectando Nube...)';
-        text.className = 'font-semibold text-[11px] text-amber-800';
+      if (!placa || placa.length < 5) {
+        mostrarMensajeConductor("Por favor escriba una placa válida.", "bg-rose-100 text-rose-800");
+        return;
       }
+
+      localStorage.setItem('pepsico_placa', placa);
+      localStorage.setItem('pepsico_nombre', nombre);
+
+      const horaActual = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+      const fechaActual = new Date().toLocaleDateString('es-CO');
+      const nowTs = Date.now();
+
+      let registro = vehiculosGlobal[placa] || {
+        placa: placa,
+        sede: sedeSeleccionada,
+        conductor: nombre,
+        empresa: empresa,
+        fecha: fechaActual,
+        horaLlegada: null,
+        horaMuelle: null,
+        horaSalida: null,
+        estado: 'PATIO',
+        tsLlegada: null
+      };
+
+      registro.sede = sedeSeleccionada;
+      if (nombre !== 'No reportado') registro.conductor = nombre;
+      if (empresa !== 'No reportada') registro.empresa = empresa;
+
+      let msgWhatsApp = "";
+
+      if (tipo === 'LLEGADA') {
+        registro.horaLlegada = horaActual;
+        registro.tsLlegada = nowTs;
+        registro.estado = 'PATIO';
+        msgWhatsApp = `🚛 *CONTROL DE TIEMPOS*\n🏢 *Sede:* *${sedeSeleccionada}*\n🏭 *Empresa:* PepsiCo\n📅 *Fecha:* ${fechaActual}\n----------------------------\n🟢 *EVENTO:* *LLEGADA A ${sedeSeleccionada} (Check-in)*\n⏱️ *Hora:* ${horaActual}\n🚘 *Placa:* *${placa}*\n👤 *Conductor:* ${nombre}\n🏢 *Transportadora:* ${empresa}`;
+      } else if (tipo === 'MUELLE') {
+        registro.horaMuelle = horaActual;
+        registro.estado = 'EN MUELLE';
+        msgWhatsApp = `🚛 *CONTROL DE TIEMPOS*\n🏢 *Sede:* *${sedeSeleccionada}*\n----------------------------\n🔵 *EVENTO:* *INGRESO A MUELLE*\n⏱️ *Hora:* ${horaActual}\n🚘 *Placa:* *${placa}*`;
+      } else if (tipo === 'SALIDA') {
+        registro.horaSalida = horaActual;
+        registro.estado = 'DESPACHADO';
+        msgWhatsApp = `🚛 *CONTROL DE TIEMPOS*\n🏢 *Sede:* *${sedeSeleccionada}*\n----------------------------\n🔴 *EVENTO:* *SALIDA DEFINITIVA DE ${sedeSeleccionada}*\n⏱️ *Hora:* ${horaActual}\n🚘 *Placa:* *${placa}*`;
+      }
+
+      // Guardar en Firebase (Tiempo Real)
+      vehiculosRef.child(placa).set(registro)
+        .then(() => {
+          mostrarMensajeConductor(`¡${tipo} registrado con éxito en Firebase! Abriendo WhatsApp...`, "bg-emerald-100 text-emerald-800");
+          // Redirigir a WhatsApp
+          setTimeout(() => {
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msgWhatsApp)}`, '_blank');
+          }, 600);
+        })
+        .catch(err => {
+          mostrarMensajeConductor("Error al sincronizar con Firebase: " + err.message, "bg-rose-100 text-rose-800");
+        });
     }
 
-    // Helper: merge external vehicle lists cleanly without dropping newer timestamps
-    function mergeVehiclesList(incomingList) {
-      if (!Array.isArray(incomingList)) return;
-      let changed = false;
+    function mostrarMensajeConductor(texto, estilo) {
+      const box = document.getElementById('driverMsg');
+      box.className = `mt-4 p-3 rounded-xl text-xs font-medium text-center ${estilo}`;
+      box.textContent = texto;
+      box.classList.remove('hidden');
+    }
 
-      incomingList.forEach(incoming => {
-        if (!incoming || !incoming.placa) return;
-        const idx = vehicles.findIndex(v => v.placa === incoming.placa);
-        if (idx === -1) {
-          vehicles.unshift(incoming);
-          changed = true;
-        } else {
-          const current = vehicles[idx];
-          // Update properties if provided
-          ['sede', 'conductor', 'empresa', 'operacion', 'muelle', 'llegada', 'ingresoMuelle', 'salidaMuelle', 'salidaPorteria', 'observaciones'].forEach(prop => {
-            if (incoming[prop] && incoming[prop] !== current[prop]) {
-              current[prop] = incoming[prop];
-              changed = true;
-            }
-          });
+    // Renderizar la tabla de Operación en Vivo en el Computador
+    function renderizarTabla() {
+      const tbody = document.getElementById('tablaVehiculos');
+      const filtro = document.getElementById('filtroSede').value;
+      tbody.innerHTML = '';
+
+      let lista = Object.values(vehiculosGlobal);
+      if (filtro !== 'TODAS') {
+        lista = lista.filter(v => v.sede === filtro);
+      }
+
+      // Ordenar: los más recientes arriba
+      lista.sort((a, b) => (b.tsLlegada || 0) - (a.tsLlegada || 0));
+
+      let total = lista.length;
+      let enPatio = 0;
+      let enMuelle = 0;
+      let salidos = 0;
+
+      lista.forEach(v => {
+        if (v.estado === 'PATIO') enPatio++;
+        if (v.estado === 'EN MUELLE') enMuelle++;
+        if (v.estado === 'DESPACHADO') salidos++;
+
+        // Calcular minutos en patio
+        let tiempoPatio = '--';
+        let alertaColor = '';
+        if (v.tsLlegada && v.estado === 'PATIO') {
+          const diffMin = Math.floor((Date.now() - v.tsLlegada) / 60000);
+          tiempoPatio = `${diffMin} min`;
+          if (diffMin > 60) alertaColor = 'text-rose-600 font-black animate-pulse';
         }
+
+        const badgeColor = v.estado === 'PATIO' ? 'bg-amber-100 text-amber-800' :
+                           v.estado === 'EN MUELLE' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800';
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 border-b border-slate-100";
+        tr.innerHTML = `
+          <td class="p-3 font-semibold text-slate-700">${v.sede || '--'}</td>
+          <td class="p-3 font-black text-slate-900 tracking-wider">${v.placa}</td>
+          <td class="p-3 text-slate-600">${v.conductor || '--'}</td>
+          <td class="p-3 font-medium text-emerald-700">${v.horaLlegada || '--'}</td>
+          <td class="p-3 font-medium text-blue-700">${v.horaMuelle || '--'}</td>
+          <td class="p-3 font-medium text-rose-700">${v.horaSalida || '--'}</td>
+          <td class="p-3 font-bold ${alertaColor}">${tiempoPatio}</td>
+          <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeColor}">${v.estado}</span></td>
+          <td class="p-3 text-center">
+            <button onclick="eliminarRegistro('${v.placa}')" class="text-slate-400 hover:text-rose-600 p-1 font-bold">🗑️</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
       });
 
-      if (changed) {
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles));
-        } catch(e) {}
-        renderAll();
+      document.getElementById('kpiTotal').textContent = total;
+      document.getElementById('kpiEspera').textContent = enPatio;
+      document.getElementById('kpiMuelle').textContent = enMuelle;
+      document.getElementById('kpiSalidos').textContent = salidos;
+    }
+
+    // Eliminar registro
+    function eliminarRegistro(placa) {
+      if (confirm(`¿Desea eliminar el registro de la placa ${placa}?`)) {
+        vehiculosRef.child(placa).remove();
       }
     }
 
-    // Audio chime for new arrivals
-    function playArrivalChime() {
-<!-- ... existing code ... -->
+    // Exportar a Excel (CSV)
+    function exportarCSV() {
+      let csv = "Sede,Placa,Conductor,Transportadora,Llegada,Muelle,Salida,Estado\n";
+      Object.values(vehiculosGlobal).forEach(v => {
+        csv += `"${v.sede || ''}","${v.placa}","${v.conductor || ''}","${v.empresa || ''}","${v.horaLlegada || ''}","${v.horaMuelle || ''}","${v.horaSalida || ''}","${v.estado}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `Reporte_Tiempos_PepsiCo_${new Date().toISOString().slice(0,10)}.csv`;
+      link.click();
+    }
+
+    // Navegación de Vistas y PIN
+    function cambiarAVista(vista) {
+      if (vista === 'admin') {
+        document.getElementById('portalConductor').classList.add('hidden');
+        document.getElementById('panelAdmin').classList.remove('hidden');
+        document.getElementById('toggleViewBtn').textContent = "📱 Modo Móvil";
+        window.location.hash = 'admin';
+      } else {
+        document.getElementById('panelAdmin').classList.add('hidden');
+        document.getElementById('portalConductor').classList.remove('hidden');
+        document.getElementById('toggleViewBtn').textContent = "🔒 Vista Admin";
+        window.location.hash = '';
+      }
+    }
+
+    function toggleVista() {
+      if (document.getElementById('panelAdmin').classList.contains('hidden')) {
+        solicitarPinAdmin();
+      } else {
+        cambiarAVista('conductor');
+      }
+    }
+
+    function solicitarPinAdmin() {
+      if (adminAuth) {
+        cambiarAVista('admin');
+        return;
+      }
+      const pin = prompt("Ingrese el PIN de Seguridad de Administrador:");
+      if (pin === "1234") {
+        adminAuth = true;
+        cambiarAVista('admin');
+      } else if (pin !== null) {
+        alert("PIN incorrecto.");
+      }
+    }
+  </script>
+</body>
+</html>
