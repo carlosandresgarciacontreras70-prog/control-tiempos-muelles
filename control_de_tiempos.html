@@ -1,0 +1,75 @@
+<!-- ... existing code ... -->
+    let mqttClient = null;
+    let isMqttConnected = false;
+    let mqttClientId = 'pepsico_' + Math.random().toString(16).substring(2, 10);
+
+    // BroadcastChannel helper for same-device cross-tab communication
+    let localBroadcast = null;
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        localBroadcast = new BroadcastChannel('pepsico_local_dock_sync');
+        localBroadcast.onmessage = (event) => {
+          if (event.data) {
+            if (event.data.type === 'LIVE_EVENT' && event.data.vehicle) {
+              handleIncomingLiveVehicle(event.data.vehicle, event.data.eventType);
+            } else if (Array.isArray(event.data.vehicles)) {
+              mergeVehiclesList(event.data.vehicles);
+            }
+          }
+        };
+      }
+    } catch (e) {
+      console.warn('BroadcastChannel not supported or restricted:', e);
+    }
+
+    // Helper: update cloud sync status badge in the UI
+    function updateSyncBadge(isConnected) {
+      const badge = document.getElementById('cloud-sync-status-badge');
+      const text = document.getElementById('cloud-sync-text');
+      if (!badge || !text) return;
+
+      if (isConnected) {
+        badge.className = 'px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-1.5 shadow-sm';
+        text.textContent = 'En Vivo (Sincronizado al Instante)';
+        text.className = 'font-semibold text-[11px] text-emerald-800';
+      } else {
+        badge.className = 'px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-1.5 shadow-sm';
+        text.textContent = 'Modo Local (Reconectando Nube...)';
+        text.className = 'font-semibold text-[11px] text-amber-800';
+      }
+    }
+
+    // Helper: merge external vehicle lists cleanly without dropping newer timestamps
+    function mergeVehiclesList(incomingList) {
+      if (!Array.isArray(incomingList)) return;
+      let changed = false;
+
+      incomingList.forEach(incoming => {
+        if (!incoming || !incoming.placa) return;
+        const idx = vehicles.findIndex(v => v.placa === incoming.placa);
+        if (idx === -1) {
+          vehicles.unshift(incoming);
+          changed = true;
+        } else {
+          const current = vehicles[idx];
+          // Update properties if provided
+          ['sede', 'conductor', 'empresa', 'operacion', 'muelle', 'llegada', 'ingresoMuelle', 'salidaMuelle', 'salidaPorteria', 'observaciones'].forEach(prop => {
+            if (incoming[prop] && incoming[prop] !== current[prop]) {
+              current[prop] = incoming[prop];
+              changed = true;
+            }
+          });
+        }
+      });
+
+      if (changed) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles));
+        } catch(e) {}
+        renderAll();
+      }
+    }
+
+    // Audio chime for new arrivals
+    function playArrivalChime() {
+<!-- ... existing code ... -->
